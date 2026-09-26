@@ -181,10 +181,20 @@ export default function ImageResizer() {
         </label>
       </div>
 
-      <p className="resizer-intro">
-        把圖片縮到最長邊 {MAX_SIDE} 像素、每張盡量在 200 KB 以下，適合放進遊戲。檔名和格式都不變，下載後可以直接放回 Dropbox
-        資料夾。圖片只在這台電腦上處理，不會上傳。
-      </p>
+      <ul className="resizer-intro">
+        <li>
+          <strong>尺寸與大小</strong>：最長邊縮至 {MAX_SIDE} 像素，單張檔案儘量低於 200 KB（適合放進遊戲）。
+        </li>
+        <li>
+          <strong>格式與命名</strong>：檔名及格式保持不變。
+        </li>
+        <li>
+          <strong>使用方式</strong>：下載後可直接放回 Dropbox 資料夾。
+        </li>
+        <li>
+          <strong>隱私安全</strong>：圖片僅在本機電腦處理，絕不外傳。
+        </li>
+      </ul>
 
       {skipped.length > 0 && (
         <div className="ttt-notice is-warn">
