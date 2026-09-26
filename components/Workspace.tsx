@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Hangman from "./Hangman";
+import ImageResizer from "./ImageResizer";
 import Materials from "./Materials";
 import TicTacToe from "./TicTacToe";
 
@@ -10,6 +11,7 @@ const views = [
   { href: "/", fill: false, render: () => <Hangman /> },
   { href: "/tic-tac-toe", fill: false, render: () => <TicTacToe /> },
   { href: "/materials", fill: true, render: () => <Materials /> },
+  { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
 ];
 
 // Keeps every opened view mounted and only hides the inactive ones, so a teacher can jump

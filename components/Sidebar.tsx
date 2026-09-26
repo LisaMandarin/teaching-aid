@@ -10,6 +10,8 @@ const games = [
   { href: "/tic-tac-toe", name: "Tic-Tac-Toe 圈圈叉叉" },
 ];
 
+const tools = [{ href: "/image-resizer", name: "圖片瘦身" }];
+
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
   const pathname = usePathname();
@@ -63,6 +65,17 @@ export default function Sidebar() {
                 ＋ 上傳教材
               </Link>
             </li>
+          </ul>
+
+          <h2 className="sidebar-title">工具</h2>
+          <ul>
+            {tools.map((t) => (
+              <li key={t.href}>
+                <Link href={t.href} {...item(pathname === t.href)}>
+                  {t.name}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
       )}
