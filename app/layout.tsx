@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Sidebar from "@/components/Sidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +10,21 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-Hant">
-      <body>{children}</body>
+      <head>
+        {/* Zhuyin fonts: each character shows its 注音 beside it. Loaded per character range, only when used. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bpmf+Huninn&family=Bpmf+Iansui&family=Bpmf+Zihi+Kai+Std&display=swap"
+        />
+      </head>
+      <body>
+        <div className="shell">
+          <Sidebar />
+          <main className="stage">{children}</main>
+        </div>
+      </body>
     </html>
   );
 }

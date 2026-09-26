@@ -1,3 +1,10 @@
+/* 字嗨注音而已 (ButTaiwan/bpmfvs): shows only the 注音 of each character. See public/fonts for its license. */
+@font-face {
+  font-family: "TeachingAid Zhuyin Only";
+  src: url("/fonts/BpmfZihiOnly-R.woff2") format("woff2");
+  font-display: swap;
+}
+
 :root {
   --bg: #f7f5f0;
   --panel: #ffffff;
@@ -7,6 +14,8 @@
   --accent: #2563eb;
   --danger: #dc2626;
   --success: #16a34a;
+  --team-0: #2563eb;
+  --team-1: #ea580c;
 }
 
 * {
@@ -74,9 +83,16 @@ body {
 }
 
 .sidebar-item {
+  display: block;
   padding: 10px 12px;
   border-radius: 6px;
   white-space: nowrap;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sidebar-item:hover {
+  background: var(--bg);
 }
 
 .sidebar-item.is-active {
@@ -286,4 +302,491 @@ body {
   color: #fff;
   font-size: 18px;
   padding: 12px 32px;
+}
+
+/* ---------- Tic-Tac-Toe ---------- */
+.ttt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.mute-btn.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ttt-teams {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ttt-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ttt-team.is-turn {
+  border-color: var(--team-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--team-color) 20%, transparent);
+}
+
+.team-0 {
+  --team-color: var(--team-0);
+}
+
+.team-1 {
+  --team-color: var(--team-1);
+}
+
+.team-text-0 {
+  color: var(--team-0);
+  font-weight: 700;
+}
+
+.team-text-1 {
+  color: var(--team-1);
+  font-weight: 700;
+}
+
+.ttt-team-symbol {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: var(--team-color);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ttt-team-symbol:disabled {
+  cursor: default;
+}
+
+.ttt-team-name {
+  width: 160px;
+}
+
+.ttt-status {
+  font-size: 24px;
+  color: var(--ink);
+}
+
+.ttt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+  /* Sized by height so the whole game fits the viewport. */
+  width: min(58vh, 560px, 100%);
+  aspect-ratio: 1;
+}
+
+.ttt-cell {
+  position: relative;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 8%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+button.ttt-cell {
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s;
+}
+
+button.ttt-cell:not(:disabled):hover {
+  border-color: var(--accent);
+  transform: scale(1.03);
+}
+
+button.ttt-cell:disabled {
+  cursor: default;
+}
+
+.ttt-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.3s;
+}
+
+.ttt-cell.is-marked .ttt-content {
+  opacity: 0.2;
+}
+
+.ttt-content img {
+  flex: 1 1 0;
+  min-height: 0;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.ttt-text {
+  line-height: 1.1;
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.ttt-text.is-xl {
+  font-size: 60cqmin;
+}
+
+.ttt-text.is-large {
+  font-size: 44cqmin;
+}
+
+.ttt-text.is-medium {
+  font-size: 30cqmin;
+}
+
+.ttt-text.is-small {
+  font-size: 16cqmin;
+}
+
+/* Text under an image: smaller than on its own, but still readable from the back of the class. */
+.ttt-text.is-caption,
+.ttt-input.is-caption {
+  flex-shrink: 0;
+  font-size: 20cqmin;
+}
+
+.ttt-cell.is-win {
+  border-color: var(--team-color);
+  background: color-mix(in srgb, var(--team-color) 12%, var(--panel));
+}
+
+.ttt-mark {
+  position: absolute;
+  inset: 6%;
+  fill: none;
+  stroke: var(--team-color);
+  stroke-width: 11;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.ttt-mark > * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.35s ease-out forwards;
+}
+
+.ttt-cell.is-editing {
+  flex-direction: column;
+  justify-content: center;
+  gap: 3%;
+  padding: 5%;
+  border-style: dashed;
+}
+
+/* Without an image the text box fills the cell, so the text sits in the middle like in play. */
+.ttt-input {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  padding: 4px;
+  font: inherit;
+  font-size: 16cqmin;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ttt-cell.has-image .ttt-input {
+  flex: none;
+  height: 24%;
+}
+
+.ttt-input.is-xl {
+  font-size: 48cqmin;
+}
+
+.ttt-input.is-large {
+  font-size: 34cqmin;
+}
+
+.ttt-input.is-medium {
+  font-size: 22cqmin;
+}
+
+.ttt-input.is-small {
+  font-size: 12cqmin;
+}
+
+.ttt-grid .ttt-input::placeholder {
+  /* Keep the hint readable even when the board uses a 注音 font. */
+  font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+  font-size: 10cqmin;
+  font-weight: 400;
+}
+
+.ttt-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--panel);
+}
+
+.ttt-thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.ttt-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.ttt-thumb-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ttt-upload {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ttt-upload:hover {
+  text-decoration: underline;
+}
+
+.ttt-status.is-won {
+  font-size: 32px;
+  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.ttt-lesson {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.ttt-lesson select {
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ttt-import {
+  flex-wrap: wrap;
+  justify-content: center;
+  display: flex;
+  gap: 12px;
+}
+
+label.btn {
+  display: inline-block;
+}
+
+.btn.is-busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ttt-notice {
+  position: relative;
+  max-width: min(560px, 100%);
+  padding: 10px 36px 10px 14px;
+  font-size: 15px;
+  background: color-mix(in srgb, var(--success) 10%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--success) 40%, var(--line));
+  border-radius: 10px;
+}
+
+.ttt-notice.is-warn {
+  background: color-mix(in srgb, #f59e0b 12%, var(--panel));
+  border-color: color-mix(in srgb, #f59e0b 50%, var(--line));
+}
+
+.ttt-notice.is-pending {
+  padding-right: 14px;
+  background: #eef2ff;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.ttt-notice p {
+  margin: 4px 0;
+}
+
+.ttt-notice-files {
+  color: var(--muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.ttt-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ttt-notice-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: none;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ttt-img-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1 1 0;
+  min-height: 0;
+  justify-content: center;
+  font-size: 9cqmin;
+  color: #b45309;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.ttt-img-missing small {
+  font-size: 7cqmin;
+  color: var(--muted);
+}
+
+.ttt-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+}
+
+
+/* Font picked in the 字型 menu, applied to the board text only. */
+.ttt-grid.has-cell-font .ttt-text,
+.ttt-grid.has-cell-font .ttt-input {
+  font-family: var(--cell-font);
+  /* 注音 fonts ship in one weight; a synthesized bold smears the small 注音 marks. */
+  font-weight: 400;
+}
+
+/* 注音 fonts are about 1.5× as wide as plain characters, so each size steps down to stay on one line. */
+.ttt-grid.has-cell-font .ttt-text.is-xl,
+.ttt-grid.has-cell-font .ttt-input.is-xl {
+  font-size: 44cqmin;
+}
+
+.ttt-grid.has-cell-font .ttt-text.is-large,
+.ttt-grid.has-cell-font .ttt-input.is-large {
+  font-size: 29cqmin;
+}
+
+.ttt-grid.has-cell-font .ttt-text.is-medium,
+.ttt-grid.has-cell-font .ttt-input.is-medium {
+  font-size: 18cqmin;
+}
+
+.ttt-grid.has-cell-font .ttt-text.is-small,
+.ttt-grid.has-cell-font .ttt-input.is-small {
+  font-size: 11cqmin;
+}
+
+.ttt-grid.has-cell-font .ttt-text.is-caption,
+.ttt-grid.has-cell-font .ttt-input.is-caption {
+  font-size: 15cqmin;
+}
+
+/* 只有注音 draws just the narrow 注音 column of each character, so it can be much larger. */
+.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-xl,
+.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-xl {
+  font-size: 66cqmin;
+}
+
+.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-large,
+.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-large {
+  font-size: 40cqmin;
+}
+
+.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-medium,
+.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-medium {
+  font-size: 25cqmin;
+}
+
+.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-small,
+.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-small {
+  font-size: 15cqmin;
+}
+
+.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-caption,
+.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-caption {
+  font-size: 21cqmin;
 }
