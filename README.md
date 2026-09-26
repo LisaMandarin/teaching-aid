@@ -6,4 +6,11 @@ A website that helps language teachers teach through games.
 
 ## 狀態
 
-專案剛起步，技術架構尚未決定。
+使用 Next.js（App Router）。目前有 Hangman 遊戲。
+
+## 開發
+
+```bash
+npm install
+npm run dev   # http://localhost:3000
+```

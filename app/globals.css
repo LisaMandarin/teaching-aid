@@ -1,0 +1,289 @@
+:root {
+  --bg: #f7f5f0;
+  --panel: #ffffff;
+  --ink: #1f2328;
+  --muted: #6b7280;
+  --line: #e5e1d8;
+  --accent: #2563eb;
+  --danger: #dc2626;
+  --success: #16a34a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+}
+
+/* ---------- Layout ---------- */
+.shell {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 12px;
+  transition: width 0.2s ease;
+  overflow: hidden;
+}
+
+.sidebar.is-open {
+  width: 240px;
+}
+
+.sidebar.is-closed {
+  width: 56px;
+}
+
+.sidebar-toggle {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.sidebar-title {
+  margin: 20px 4px 8px;
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.sidebar-item.is-active {
+  background: #eef2ff;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.stage {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  padding: 24px;
+}
+
+/* margin: auto centers when there is room, but never pushes content above the scroll top. */
+.stage > * {
+  margin: auto;
+}
+
+/* ---------- Hangman ---------- */
+.hangman {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.hangman-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mute-btn {
+  padding: 6px 12px;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.mute-btn[aria-pressed="true"] {
+  color: var(--muted);
+}
+
+.hangman-title {
+  margin: 0;
+  font-size: 28px;
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.board-label {
+  width: 220px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ink);
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+}
+
+.board-label:hover {
+  border-color: var(--line);
+}
+
+.board-label:focus {
+  outline: none;
+  border: 1px solid var(--accent);
+  background: var(--panel);
+}
+
+.board.is-won .gallows {
+  border-color: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
+}
+
+.status.is-won {
+  color: var(--success);
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.mode-switch {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.mode-btn {
+  padding: 8px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.mode-btn.is-active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.pk {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pk .gallows {
+  height: min(48vh, 440px);
+}
+
+.pk-vs {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.gallows {
+  /* Sized by height so the whole game fits the viewport. */
+  height: min(55vh, 560px);
+  width: auto;
+  aspect-ratio: 200 / 250;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.gallows.is-dead {
+  stroke: var(--danger);
+}
+
+.stroke > * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.35s ease-out forwards;
+}
+
+.dead-eyes > * {
+  stroke-width: 3;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.status {
+  margin: 0;
+  font-size: 20px;
+  color: var(--muted);
+}
+
+.status.is-dead {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-size: 18px;
+  padding: 12px 32px;
+}
