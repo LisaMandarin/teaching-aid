@@ -131,3 +131,33 @@ export function playStrokeSound(n: number, max: number) {
   else if (n >= 5) playUhOh();
   else playScratch();
 }
+
+// Recorded sound effects, served from public/sounds.
+const files: Record<string, HTMLAudioElement> = {};
+
+function fileAudio(path: string): HTMLAudioElement {
+  files[path] ??= new Audio(path);
+  return files[path];
+}
+
+function playFile(path: string) {
+  if (muted) return;
+  const a = fileAudio(path);
+  a.currentTime = 0;
+  a.play().catch(() => {});
+}
+
+const WRITING = "/sounds/writing.mp3";
+const CHEER = "/sounds/cheer.m4a";
+
+// Load the files ahead of time so they play right away on the first click.
+export function preloadMarkSounds() {
+  fileAudio(WRITING).load();
+  fileAudio(CHEER).load();
+}
+
+// Pen writing an O or X on the board.
+export const playWriting = () => playFile(WRITING);
+
+// Crowd cheering on a win.
+export const playCheer = () => playFile(CHEER);
