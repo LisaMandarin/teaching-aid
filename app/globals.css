@@ -903,3 +903,114 @@ label.btn {
   font-size: 15px;
   color: #b45309;
 }
+
+/* ---------- Image resizer ---------- */
+.resizer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  border-radius: 12px;
+  outline: 3px dashed transparent;
+  outline-offset: 4px;
+}
+
+.resizer.is-dragging {
+  outline-color: var(--accent);
+}
+
+.resizer-intro {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.resizer-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.resizer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.resizer-row:last-child {
+  border-bottom: none;
+}
+
+.resizer-thumb {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.resizer-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.resizer-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resizer-note {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 10px;
+  font-size: 15px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.resizer-note strong {
+  color: var(--success);
+}
+
+.resizer-note .is-warn,
+.resizer-note.is-warn {
+  color: #b45309;
+}
+
+.resizer-dims {
+  font-size: 13px;
+}
+
+.resizer-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.resizer-total {
+  flex: 1;
+  font-size: 16px;
+}
+
+.resizer-total strong {
+  color: var(--success);
+}

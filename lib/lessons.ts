@@ -1,6 +1,7 @@
 // Question banks for Tic-Tac-Toe, imported from an Excel file: one sheet per lesson.
 
 import { FONTS, type FontId, fontFromSetting } from "./fonts";
+import { drawScaled, keepsTransparency, loadImage } from "./images";
 import { applyReadings, loadPolyphones } from "./zhuyin";
 
 export type Cell = {
@@ -40,27 +41,15 @@ export function drawBoard(lesson: Lesson): Cell[] {
   return picked;
 }
 
-export function readImage(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, MAX_IMAGE_SIZE / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      // Keep PNG/GIF transparency; everything else compresses better as JPEG.
-      const png = file.type === "image/png" || file.type === "image/gif";
-      resolve(canvas.toDataURL(png ? "image/png" : "image/jpeg", 0.85));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error(`無法讀取圖片：${file.name}`));
-    };
-    img.src = url;
-  });
+export async function readImage(file: File): Promise<string> {
+  let img: HTMLImageElement;
+  try {
+    img = await loadImage(file);
+  } catch {
+    throw new Error(`無法讀取圖片：${file.name}`);
+  }
+  const type = keepsTransparency(file.type) ? "image/png" : "image/jpeg";
+  return drawScaled(img, MAX_IMAGE_SIZE).toDataURL(type, 0.85);
 }
 
 function isDropbox(url: URL) {

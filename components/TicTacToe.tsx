@@ -387,7 +387,7 @@ export default function TicTacToe() {
 
       {storageFull && (
         <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，題目沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或縮小圖片。</p>
+          <p>⚠️ 瀏覽器的儲存空間不夠，題目沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
         </div>
       )}
 
