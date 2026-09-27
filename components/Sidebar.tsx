@@ -10,7 +10,10 @@ const games = [
   { href: "/tic-tac-toe", name: "Tic-Tac-Toe 圈圈叉叉" },
 ];
 
-const tools = [{ href: "/image-resizer", name: "圖片瘦身" }];
+const tools = [
+  { href: "/rewards", name: "我的獎勵" },
+  { href: "/image-resizer", name: "圖片瘦身" },
+];
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
