@@ -211,3 +211,12 @@ export function playDing() {
     osc.stop(at + 0.8);
   });
 }
+
+// Any sound file or URL, e.g. the teacher's picks for 開禮物. Ignores the games' mute switch; the page has its own.
+export function playSoundFile(src: string) {
+  const a = fileAudio(src);
+  a.currentTime = 0;
+  a.play().catch(() => {});
+}
+
+export const preloadSoundFile = (src: string) => fileAudio(src).load();
