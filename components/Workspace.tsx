@@ -5,6 +5,7 @@ import { useState } from "react";
 import Hangman from "./Hangman";
 import ImageResizer from "./ImageResizer";
 import Materials from "./Materials";
+import NameDraw from "./NameDraw";
 import Rewards from "./Rewards";
 import TicTacToe from "./TicTacToe";
 
@@ -14,6 +15,7 @@ const views = [
   { href: "/materials", fill: true, render: () => <Materials /> },
   { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
   { href: "/rewards", fill: true, render: () => <Rewards /> },
+  { href: "/draw", fill: true, render: () => <NameDraw /> },
 ];
 
 // Keeps every opened view mounted and only hides the inactive ones, so a teacher can jump
