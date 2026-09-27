@@ -172,3 +172,42 @@ export function playCoin() {
   a.currentTime = 0;
   a.play().catch(() => {});
 }
+
+// Sticks rattling in the 抽籤筒: a burst of short wooden clicks. Ignores the games' mute switch; the draw page has its own.
+export function playRattle(seconds: number) {
+  const ac = audio();
+  const t = ac.currentTime;
+  const click = noiseBuffer(ac, 0.03);
+  for (let at = 0; at < seconds; at += 0.04 + Math.random() * 0.05) {
+    const src = ac.createBufferSource();
+    src.buffer = click;
+    const band = ac.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.value = 1800 + Math.random() * 1400;
+    band.Q.value = 4;
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.5 + Math.random() * 0.4, t + at);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + at + 0.03);
+    src.connect(band).connect(gain).connect(ac.destination);
+    src.start(t + at);
+  }
+}
+
+// A bright two-note chime when the name comes out.
+export function playDing() {
+  const ac = audio();
+  const t = ac.currentTime;
+  [988, 1319].forEach((freq, i) => {
+    const osc = ac.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const gain = ac.createGain();
+    const at = t + i * 0.12;
+    gain.gain.setValueAtTime(0, at);
+    gain.gain.linearRampToValueAtTime(0.35, at + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, at + 0.8);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(at);
+    osc.stop(at + 0.8);
+  });
+}

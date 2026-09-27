@@ -12,6 +12,7 @@ const games = [
 
 const tools = [
   { href: "/rewards", name: "我的獎勵" },
+  { href: "/draw", name: "抽籤筒" },
   { href: "/image-resizer", name: "圖片瘦身" },
 ];
 
