@@ -6,7 +6,7 @@ A website that helps language teachers teach through games.
 
 ## 狀態
 
-使用 Next.js（App Router）。目前有 Hangman、圈圈叉叉（Tic-Tac-Toe）遊戲，以及「教材」：老師可上傳 PDF 或圖片（存在瀏覽器的 IndexedDB），上課時在遊戲和教材之間切換，遊戲進度不會中斷。另有「圖片瘦身」工具：把圖片縮到最長邊 600 像素、每張約 200 KB 以下（檔名和格式不變），方便放上 Dropbox 給遊戲使用。
+使用 Next.js（App Router）。目前有 Hangman、圈圈叉叉（Tic-Tac-Toe）遊戲，以及「教材」：老師可上傳 PDF 或圖片（存在瀏覽器的 IndexedDB），上課時在遊戲和教材之間切換，遊戲進度不會中斷。另有「圖片瘦身」工具：把圖片縮到最長邊 600 像素、每張約 200 KB 以下（檔名和格式不變），方便放上 Dropbox 給遊戲使用。「我的獎勵」：上傳學生名單 Excel（學生、金幣），每位學生一個寶箱，點一下掉進一枚金幣；下課後下載紀錄到電腦，下次再上傳接著累積。
 
 ## 開發
 

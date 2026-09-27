@@ -161,3 +161,14 @@ export const playWriting = () => playFile(WRITING);
 
 // Crowd cheering on a win.
 export const playCheer = () => playFile(CHEER);
+
+const COIN = "/sounds/coin.mp3";
+
+export const preloadCoinSound = () => fileAudio(COIN).load();
+
+// Coin dropping into the chest. Ignores the games' mute switch; the rewards page has its own.
+export function playCoin() {
+  const a = fileAudio(COIN);
+  a.currentTime = 0;
+  a.play().catch(() => {});
+}
