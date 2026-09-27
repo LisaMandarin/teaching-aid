@@ -749,63 +749,63 @@ label.btn {
 }
 
 
-/* Font picked in the 字型 menu, applied to the board text only. */
-.ttt-grid.has-cell-font .ttt-text,
-.ttt-grid.has-cell-font .ttt-input {
+/* Font picked in the 字型 menu, applied to the board text only (圈圈叉叉 cells, 開禮物 box covers). */
+.has-cell-font .ttt-text,
+.has-cell-font .ttt-input {
   font-family: var(--cell-font);
   /* 注音 fonts ship in one weight; a synthesized bold smears the small 注音 marks. */
   font-weight: 400;
 }
 
 /* 注音 fonts are about 1.5× as wide as plain characters, so each size steps down to stay on one line. */
-.ttt-grid.has-cell-font .ttt-text.is-xl,
-.ttt-grid.has-cell-font .ttt-input.is-xl {
+.has-cell-font .ttt-text.is-xl,
+.has-cell-font .ttt-input.is-xl {
   font-size: 44cqmin;
 }
 
-.ttt-grid.has-cell-font .ttt-text.is-large,
-.ttt-grid.has-cell-font .ttt-input.is-large {
+.has-cell-font .ttt-text.is-large,
+.has-cell-font .ttt-input.is-large {
   font-size: 29cqmin;
 }
 
-.ttt-grid.has-cell-font .ttt-text.is-medium,
-.ttt-grid.has-cell-font .ttt-input.is-medium {
+.has-cell-font .ttt-text.is-medium,
+.has-cell-font .ttt-input.is-medium {
   font-size: 18cqmin;
 }
 
-.ttt-grid.has-cell-font .ttt-text.is-small,
-.ttt-grid.has-cell-font .ttt-input.is-small {
+.has-cell-font .ttt-text.is-small,
+.has-cell-font .ttt-input.is-small {
   font-size: 11cqmin;
 }
 
-.ttt-grid.has-cell-font .ttt-text.is-caption,
-.ttt-grid.has-cell-font .ttt-input.is-caption {
+.has-cell-font .ttt-text.is-caption,
+.has-cell-font .ttt-input.is-caption {
   font-size: 15cqmin;
 }
 
 /* 只有注音 draws just the narrow 注音 column of each character, so it can be much larger. */
-.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-xl,
-.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-xl {
+[data-font="zhuyin-only"] .ttt-text.is-xl,
+[data-font="zhuyin-only"] .ttt-input.is-xl {
   font-size: 66cqmin;
 }
 
-.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-large,
-.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-large {
+[data-font="zhuyin-only"] .ttt-text.is-large,
+[data-font="zhuyin-only"] .ttt-input.is-large {
   font-size: 40cqmin;
 }
 
-.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-medium,
-.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-medium {
+[data-font="zhuyin-only"] .ttt-text.is-medium,
+[data-font="zhuyin-only"] .ttt-input.is-medium {
   font-size: 25cqmin;
 }
 
-.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-small,
-.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-small {
+[data-font="zhuyin-only"] .ttt-text.is-small,
+[data-font="zhuyin-only"] .ttt-input.is-small {
   font-size: 15cqmin;
 }
 
-.ttt-grid[data-font="zhuyin-only"] .ttt-text.is-caption,
-.ttt-grid[data-font="zhuyin-only"] .ttt-input.is-caption {
+[data-font="zhuyin-only"] .ttt-text.is-caption,
+[data-font="zhuyin-only"] .ttt-input.is-caption {
   font-size: 21cqmin;
 }
 
@@ -1491,5 +1491,383 @@ label.btn {
 
   .draw-list {
     width: auto;
+  }
+}
+
+/* ---------- 開禮物 ---------- */
+.gifts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gifts-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.gifts-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.gifts-listen {
+  margin-left: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.gifts-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gifts-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.gifts-swatch input {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.gifts-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.gifts-stage.is-boom {
+  animation: gifts-boom 0.6s ease-out;
+}
+
+.gifts-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.3em;
+  max-width: 100%;
+  font-size: clamp(32px, 5vw, 60px);
+  font-weight: bold;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.gifts-result-text {
+  animation: draw-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.gifts-result-text.kind-good {
+  color: #b45309;
+}
+
+.gifts-result-text.kind-bad {
+  color: var(--muted);
+}
+
+.gifts-result-text.kind-bomb {
+  color: var(--danger);
+}
+
+.gifts-placeholder {
+  font-size: 0.6em;
+  color: var(--muted);
+}
+
+.gifts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 14vw, 180px), 1fr));
+  gap: 28px 20px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The box sits at the top; an opened box's gift stands in front of it at the bottom. */
+.gift-cell {
+  position: relative;
+  aspect-ratio: 1 / 1.2;
+}
+
+.gift-cell.is-shaking,
+.gift-cell.is-revealing {
+  z-index: 5;
+}
+
+.gift-hit {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.gift-hit:disabled {
+  cursor: default;
+}
+
+/* The box and its cover move together. */
+.gift-art {
+  position: relative;
+  transform-origin: 50% 95%;
+  transition: transform 0.15s;
+}
+
+.gift-box {
+  display: block;
+  width: 100%;
+}
+
+.gift-hit:hover:not(:disabled) .gift-art {
+  transform: translateY(-4px) rotate(-2deg);
+}
+
+.gift-cell.is-shaking .gift-art {
+  animation: box-shake 0.18s ease-in-out infinite;
+}
+
+/* A white label on the front of the box (x 20–100, y 58–110 of the 120-unit box). */
+.gift-cover {
+  position: absolute;
+  left: 20%;
+  top: 48%;
+  width: 60%;
+  height: 43%;
+  container-type: size;
+  padding: 3%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  color: var(--ink);
+  pointer-events: none;
+}
+
+/* One line, as large as fits: the label's width split over the text's width in ems (--width), capped by its height. */
+.gift-cover-text {
+  font-size: min(62cqh, calc(94cqw / var(--width)));
+  white-space: nowrap;
+}
+
+.gift-cover-text.is-caption {
+  flex-shrink: 0;
+  font-size: min(24cqh, calc(94cqw / var(--width)));
+}
+
+/* 注音 fonts: leave room above and below for the tone marks. */
+.has-cell-font .gift-cover-text {
+  font-size: min(50cqh, calc(94cqw / var(--width)));
+}
+
+[data-font="zhuyin-only"] .gift-cover-text {
+  font-size: min(70cqh, calc(94cqw / var(--width)));
+}
+
+.has-cell-font .gift-cover-text.is-caption {
+  font-size: min(22cqh, calc(94cqw / var(--width)));
+}
+
+.gift-paper {
+  fill: var(--box);
+}
+
+.gift-ribbon {
+  fill: var(--ribbon);
+}
+
+.gift-inside {
+  display: none;
+  fill: rgba(0, 0, 0, 0.45);
+}
+
+.gift-number {
+  font-size: 15px;
+  font-weight: bold;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--ink);
+}
+
+.gift-cell.is-open .gift-inside {
+  display: block;
+}
+
+.gift-cell.is-open .gift-lid {
+  display: none;
+}
+
+/* The lid pops off as the gift comes out. */
+.gift-cell.is-open.is-revealing .gift-lid {
+  display: block;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lid-off 0.5s ease-out forwards;
+}
+
+.gift-item {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 68%;
+  padding: 6px;
+  background: #fff;
+  border: 3px solid #fcd34d;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.gift-item.kind-bad {
+  border-color: #cbd5e1;
+}
+
+.gift-item.kind-bomb {
+  border-color: var(--danger);
+}
+
+/* Rises out of the box (behind its front), then drops down in front of it. Runs for GIFT_MS. */
+.gift-item.is-new {
+  animation: gift-out 1.2s forwards;
+}
+
+.gift-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+}
+
+.gift-emoji {
+  font-size: clamp(36px, 5vw, 60px);
+  line-height: 1.1;
+}
+
+.gift-missing {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #b45309;
+  overflow-wrap: anywhere;
+}
+
+.gift-name {
+  font-size: clamp(13px, 1.4vw, 18px);
+  font-weight: bold;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.gift-name.is-big {
+  padding: 10px 0;
+  font-size: clamp(18px, 2vw, 26px);
+}
+
+/* Bomb going off: a fireball where the gift pops out of the box. */
+.gift-boom {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  z-index: 4;
+  width: 90%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff7cc 0%, #fde047 25%, #f97316 55%, rgba(220, 38, 38, 0) 72%);
+  pointer-events: none;
+  opacity: 0;
+  animation: boom 0.8s 0.6s ease-out forwards;
+}
+
+@keyframes box-shake {
+  25% {
+    transform: rotate(-7deg) translateY(-4px);
+  }
+  75% {
+    transform: rotate(7deg) translateY(-4px);
+  }
+}
+
+@keyframes lid-off {
+  to {
+    transform: translate(-24px, -70px) rotate(-45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes gift-out {
+  0% {
+    transform: translate(-50%, -30%) scale(0.5);
+    z-index: 1;
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: translate(-50%, -140%) scale(0.9);
+    z-index: 1;
+    animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  51% {
+    z-index: 3;
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    z-index: 3;
+  }
+}
+
+@keyframes boom {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes gifts-boom {
+  15%,
+  45%,
+  75% {
+    transform: translate(-8px, 4px);
+  }
+  30%,
+  60%,
+  90% {
+    transform: translate(8px, -4px);
   }
 }

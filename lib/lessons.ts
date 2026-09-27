@@ -2,6 +2,7 @@
 
 import { FONTS, type FontId, fontFromSetting } from "./fonts";
 import { drawScaled, keepsTransparency, loadImage } from "./images";
+import { listRef, saveWorkbook } from "./excel";
 import { applyReadings, loadPolyphones } from "./zhuyin";
 
 export type Cell = {
@@ -20,6 +21,8 @@ const HELP_SHEET = "說明";
 const SETTINGS_SHEET = "設定";
 const FOLDER_LABEL = "圖片資料夾";
 const FONT_LABEL = "字型";
+// Hidden sheet holding the choices for the template's drop-down lists.
+const OPTIONS_SHEET = "選項";
 // Uploaded images are shrunk so they fit comfortably in localStorage.
 const MAX_IMAGE_SIZE = 400;
 
@@ -57,7 +60,7 @@ function isDropbox(url: URL) {
 }
 
 // Share links open a preview page; make them return the image itself.
-function directLink(link: string): string {
+export function directLink(link: string): string {
   try {
     const url = new URL(link);
     if (isDropbox(url)) {
@@ -77,7 +80,7 @@ function directLink(link: string): string {
 
 // A file inside a shared folder. For a Dropbox folder link, `preview=<name>&raw=1`
 // returns that file's bytes (not an official API, but it works for scl/fo links).
-function fileInFolder(folder: string, name: string): string {
+export function fileInFolder(folder: string, name: string): string {
   try {
     const url = new URL(folder);
     if (isDropbox(url)) {
@@ -95,7 +98,7 @@ function fileInFolder(folder: string, name: string): string {
 }
 
 // A Google Drive folder can't be addressed by file name, and its link is a web page, not an image.
-const isDriveFolder = (link: string) => /drive\.google\.com\/drive\/(u\/\d+\/)?folders\//.test(link);
+export const isDriveFolder = (link: string) => /drive\.google\.com\/drive\/(u\/\d+\/)?folders\//.test(link);
 
 const cellText = (v: unknown) => (v === null || v === undefined ? "" : String(v).trim());
 
@@ -137,7 +140,7 @@ export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
 
   for (const { sheet, data } of sheets) {
     const name = sheet.trim();
-    if (name === HELP_SHEET || name === SETTINGS_SHEET) continue;
+    if (name === HELP_SHEET || name === SETTINGS_SHEET || name === OPTIONS_SHEET) continue;
 
     const rows = data.filter((row) => row.some((v) => cellText(v) !== ""));
     if (rows.length === 0) continue;
@@ -212,8 +215,6 @@ export async function attachLocalImages(lessons: Lesson[], files: File[]): Promi
 const bold = { fontWeight: "bold", backgroundColor: "#e0e7ff" } as const;
 
 export async function downloadTemplate() {
-  const { default: writeExcelFile } = await import("write-excel-file/browser");
-
   const help = [
     "「圈圈叉叉」題目範本",
     "",
@@ -247,7 +248,8 @@ export async function downloadTemplate() {
     ...words.map((w) => [w, ""]),
   ];
 
-  await writeExcelFile([
+  await saveWorkbook(
+    [
     {
       sheet: HELP_SHEET,
       columns: [{ width: 90 }],
@@ -261,7 +263,7 @@ export async function downloadTemplate() {
         [FOLDER_LABEL, ""],
         ["", "↑ 貼上 Dropbox 資料夾的分享連結；圖片放在自己電腦的話就留空"],
         [FONT_LABEL, "注音・楷書"],
-        ["", `↑ 可以填：${FONTS.map((f) => f.name).join("、")}`],
+        ["", "↑ 從下拉選單選"],
       ],
     },
     {
@@ -292,5 +294,15 @@ export async function downloadTemplate() {
         "重[ㄔㄨㄥˊ]新",
       ]),
     },
-  ]).toFile("圈圈叉叉題目範本.xlsx");
+    {
+      sheet: OPTIONS_SHEET,
+      data: [[{ value: FONT_LABEL, ...bold }], ...FONTS.map((f) => [f.name])],
+    },
+    ],
+    "圈圈叉叉題目範本.xlsx",
+    {
+      dropdowns: [{ sheet: SETTINGS_SHEET, range: "B4", source: listRef(OPTIONS_SHEET, "A", 2, FONTS.length + 1) }],
+      hidden: [OPTIONS_SHEET],
+    },
+  );
 }

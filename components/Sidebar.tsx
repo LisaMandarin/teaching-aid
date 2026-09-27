@@ -8,6 +8,7 @@ import { selectMaterial, useMaterials } from "@/lib/materials";
 const games = [
   { href: "/", name: "Hangman 吊人遊戲" },
   { href: "/tic-tac-toe", name: "Tic-Tac-Toe 圈圈叉叉" },
+  { href: "/gifts", name: "Mystery Gift 開禮物" },
 ];
 
 const tools = [

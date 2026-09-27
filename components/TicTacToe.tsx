@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CellImage, textSize } from "./CellContent";
 import Confetti from "./Confetti";
 import { playCheer, playWriting, preloadMarkSounds, setMuted } from "@/lib/sounds";
 import {
@@ -16,7 +17,6 @@ import {
   shuffle,
 } from "@/lib/lessons";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
-import { visibleLength } from "@/lib/zhuyin";
 
 type Team = 0 | 1;
 type Move = { cell: number; team: Team };
@@ -48,30 +48,6 @@ function findWinner(marks: (Team | null)[]): { team: Team; line: number[] } | nu
     if (t !== null && t === marks[b] && t === marks[c]) return { team: t, line };
   }
   return null;
-}
-
-// Longer text gets a smaller font so it still fits the square.
-function textSize(text: string, withImage: boolean): string {
-  if (withImage) return "is-caption";
-  const len = visibleLength(text);
-  if (len <= 1) return "is-xl";
-  if (len <= 2) return "is-large";
-  if (len <= 4) return "is-medium";
-  return "is-small";
-}
-
-// Shows a warning with the file name when the image can't be loaded (wrong name, not shared, …).
-function CellImage({ cell }: { cell: Cell }) {
-  const [failed, setFailed] = useState(false);
-  if (failed)
-    return (
-      <span className="ttt-img-missing">
-        ⚠️ 找不到圖片
-        {cell.imageName && <small>{cell.imageName}</small>}
-      </span>
-    );
-  // Google Drive refuses images requested with another site as the referrer.
-  return <img src={cell.image!} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
 }
 
 type Notice = { lines: string[]; warnings: string[] };

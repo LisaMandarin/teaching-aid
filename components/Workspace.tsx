@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import GiftBoxes from "./GiftBoxes";
 import Hangman from "./Hangman";
 import ImageResizer from "./ImageResizer";
 import Materials from "./Materials";
@@ -12,6 +13,7 @@ import TicTacToe from "./TicTacToe";
 const views = [
   { href: "/", fill: false, render: () => <Hangman /> },
   { href: "/tic-tac-toe", fill: false, render: () => <TicTacToe /> },
+  { href: "/gifts", fill: true, render: () => <GiftBoxes /> },
   { href: "/materials", fill: true, render: () => <Materials /> },
   { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
   { href: "/rewards", fill: true, render: () => <Rewards /> },
