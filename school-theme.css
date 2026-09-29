@@ -1,0 +1,367 @@
+/* =========================================================
+   教學便利通 — 學校主題（黑板／粉筆／布告欄）
+   用法：在全域 CSS（例如 app/globals.css）最上方 @import 這支檔案，
+   並在 <head> 放 Google Fonts：
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+   （Next.js 可改用 next/font/google 的 LXGW_WenKai_TC 與 Noto_Sans_TC）
+   ========================================================= */
+
+:root {
+  /* 字型 */
+  --font-chalk: 'LXGW WenKai TC', 'Kaiti TC', serif;   /* 標題、黑板上的字、按鈕 */
+  --font-body: 'Noto Sans TC', system-ui, sans-serif;  /* 一般 UI 文字 */
+
+  /* 牆面／紙張 */
+  --wall: #efe6d3;
+  --paper: #fffdf5;
+  --paper-warm: #fbf3d4;     /* 偏黃的紙（卡片交錯用） */
+  --paper-border: #cbbd9c;
+  --paper-shadow: #d9ccae;
+  --sticky: #f7df7a;
+  --tape: rgba(236, 222, 180, 0.85);
+  --ink: #2a2a28;
+  --ink-soft: #6a5d4d;
+  --heading: #3a2a1a;
+
+  /* 黑板 */
+  --board: #2c4535;          /* 可換 #26302c（黑）或 #1f3a4a（藍） */
+  --board-ink: #23392b;      /* 黑板色上的深色字（反白按鈕用） */
+  --chalk: #f3f0e4;
+  --chalk-dim: rgba(243, 240, 228, 0.55);
+  --chalk-yellow: #f2d675;
+  --chalk-yellow-shadow: #b89a3c;
+  --chalk-pink: #f0a8a0;
+  --chalk-blue: #9fd0ec;     /* O 隊 */
+  --chalk-orange: #f4b06b;   /* X 隊 */
+
+  /* 木頭／軟木 */
+  --wood: #8a5a2e;
+  --wood-dark: #6e4522;
+  --wood-tray: #7a4e27;
+  --cork: #c4955e;
+
+  /* 圖釘 */
+  --pin-red: #d8544a;
+  --pin-blue: #3f7fc4;
+  --pin-gold: #e0a93a;
+  --pin-teal: #4fae9e;
+
+  /* 金幣、寶箱（我的獎勵） */
+  --coin: #f2c33d;
+  --coin-edge: #c89420;
+  --coin-ink: #8a4b1c;       /* 金幣數字 */
+  --chest-lid: #8a4b1c;
+  --chest-wood: #b5642a;
+  --chest-inside: #5a3010;
+
+  /* 籤筒（抽籤筒） */
+  --cup: #d8544a;
+  --cup-dark: #c8423a;
+  --cup-rim-shadow: #a8372f;
+  --stick-wood: #e8cf9a;
+  --stick-wood-light: #f3dfae; /* 抽出來的那一支 */
+  --stick-edge: #c9a86a;
+  --stick-ink: #5a3010;
+
+  /* 筆記紙上的記號（抽籤名單） */
+  --paper-rule: rgba(110, 150, 200, 0.3);   /* 每一行底下的藍線 */
+  --paper-margin: rgba(214, 90, 80, 0.5);  /* 左邊的紅色邊線 */
+  --marker-yellow: #fbe9a6;                 /* 螢光筆標記 */
+  --stamp-red: #b8322a;
+  --ink-faint: #8a8072;                     /* 劃掉的字 */
+
+  /* 徽章 */
+  --badge-green: #dcefd9;
+  --badge-green-ink: #1f6b3a;
+
+  /* 其他 */
+  --line-green: #05873f;     /* 加深過，白字才夠對比 */
+  --radius: 12px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--wall);
+  background-image: repeating-linear-gradient(90deg, rgba(120, 90, 50, 0.035) 0 2px, transparent 2px 120px);
+}
+
+.font-chalk { font-family: var(--font-chalk); }
+
+/* ---------- 頁面標題 ---------- */
+.page-title {
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+/* ---------- 軟木布告欄（側欄、上傳區） ---------- */
+.cork {
+  background-color: var(--cork);
+  background-image:
+    radial-gradient(rgba(92, 56, 20, 0.38) 1px, transparent 1.6px),
+    radial-gradient(rgba(255, 232, 196, 0.28) 1px, transparent 1.6px);
+  background-size: 7px 7px, 11px 11px;
+  background-position: 0 0, 3px 5px;
+}
+.cork--sidebar {
+  border-right: 12px solid var(--wood);
+  box-shadow: inset -2px 0 0 var(--wood-dark), inset 0 0 30px rgba(80, 45, 10, 0.35);
+}
+.cork--framed {
+  border: 16px solid var(--wood);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 2px var(--wood-dark), inset 0 0 40px rgba(80, 45, 10, 0.4), 0 12px 24px rgba(70, 45, 20, 0.22);
+}
+
+/* ---------- 黑板 ---------- */
+.chalkboard {
+  position: relative;
+  box-sizing: border-box;
+  border: 16px solid var(--wood);
+  border-radius: 8px;
+  background-color: var(--board);
+  background-image:
+    radial-gradient(ellipse 60% 45% at 28% 22%, rgba(255, 255, 255, 0.07), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 78% 72%, rgba(255, 255, 255, 0.05), transparent 70%);
+  box-shadow: inset 0 0 0 2px var(--wood-dark), inset 0 0 50px rgba(0, 0, 0, 0.45), 0 12px 24px rgba(70, 45, 20, 0.22);
+  font-family: var(--font-chalk);
+  color: var(--chalk);
+}
+.chalk-text { color: var(--chalk); text-shadow: 0 0 1px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.12); }
+.chalk-yellow { color: var(--chalk-yellow); }
+
+/* 粉筆畫的線（吊人圖、底線等） */
+.chalk-line {
+  background: var(--chalk);
+  opacity: 0.92;
+  border-radius: 4px;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.25);
+}
+
+/* 黑板下方的粉筆槽：放在 .chalkboard 後面，margin-top 負值貼齊 */
+.chalk-tray {
+  position: relative;
+  height: 18px;
+  margin: 0 28px;
+  background: var(--wood-tray);
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 6px 10px rgba(70, 45, 20, 0.25);
+}
+.chalk-tray .stick { position: absolute; top: 3px; height: 9px; border-radius: 4px; }
+.chalk-tray .eraser {
+  position: absolute; top: -8px; right: 90px; width: 86px; height: 22px;
+  border-radius: 3px; background: #b88a55; box-shadow: inset 0 12px 0 #34466b;
+}
+
+/* ---------- 紙張、便利貼、紙膠帶、圖釘 ---------- */
+.paper {
+  position: relative;
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(60, 35, 10, 0.28);
+}
+.sticky { background: var(--sticky); }
+.paper--warm { background: var(--paper-warm); }
+.tilt-l { transform: rotate(-1.5deg); }
+.tilt-r { transform: rotate(1deg); }
+
+.pin {
+  position: absolute; top: -5px; left: 50%;
+  width: 12px; height: 12px; margin-left: -6px;
+  border-radius: 50%; background: var(--pin-red);
+  box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.25), 0 2px 2px rgba(0, 0, 0, 0.3);
+}
+.pin--md { width: 16px; height: 16px; margin-left: -8px; top: -7px; }
+.pin--lg { width: 22px; height: 22px; margin-left: -11px; top: -8px; }
+
+.tape {
+  position: absolute; width: 110px; height: 28px;
+  background: var(--tape);
+}
+
+/* 側欄分類標籤（紙膠帶上的手寫字） */
+.tape-label {
+  align-self: flex-start;
+  padding: 2px 14px;
+  background: rgba(246, 236, 204, 0.88);
+  font-family: var(--font-chalk);
+  font-size: 16px; font-weight: 700; letter-spacing: 0.15em;
+  color: #5a3e20;
+  transform: rotate(-2deg);
+}
+
+/* 只有左邊紅線的筆記紙（抽籤名單）：每一行自己畫底線，用 var(--paper-rule) */
+.margin-paper {
+  background-color: var(--paper);
+  background-image: linear-gradient(90deg, transparent 32px, var(--paper-margin) 32px, var(--paper-margin) 34px, transparent 34px);
+  border-radius: 2px;
+  box-shadow: 0 6px 14px rgba(60, 35, 10, 0.25);
+}
+
+/* 橫線筆記紙（歡迎彈窗） */
+.lined-paper {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(90deg, transparent 56px, rgba(214, 90, 80, 0.5) 56px, rgba(214, 90, 80, 0.5) 58px, transparent 58px),
+    repeating-linear-gradient(180deg, transparent 0, transparent 35px, rgba(110, 150, 200, 0.26) 35px, rgba(110, 150, 200, 0.26) 36px);
+  background-position: 0 0, 0 26px;
+  line-height: 36px;
+  box-shadow: 0 20px 44px rgba(20, 10, 0, 0.38);
+}
+
+/* ---------- 側欄選單項目 ---------- */
+.nav-card {
+  position: relative;
+  display: flex; align-items: center;
+  min-height: 46px; padding: 0 16px;
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 17px;
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(60, 35, 10, 0.28);
+}
+.nav-card:nth-child(odd)  { transform: rotate(0.5deg); }
+.nav-card:nth-child(even) { transform: rotate(-0.5deg); }
+.nav-card[aria-current="page"] {
+  background: var(--sticky);
+  font-weight: 700;
+  transform: rotate(-1.6deg);
+}
+
+/* ---------- 按鈕 ---------- */
+/* 頁首的紙標籤按鈕（音效開、設定、編輯題目） */
+.btn-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 44px; padding: 0 16px;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-border);
+  border-radius: 10px;
+  box-shadow: 0 2px 0 var(--paper-shadow);
+  font-family: var(--font-body); font-size: 16px; color: var(--ink);
+  cursor: pointer;
+}
+/* 小一號、沒有底色的紙標籤按鈕（紙面上的次要按鈕，例如名單的「重新開始」） */
+.btn-tag--sm {
+  gap: 6px; height: 40px; padding: 0 12px;
+  background: transparent; box-shadow: none;
+  border-radius: 8px; font-size: 14px;
+}
+.select-tag {
+  height: 44px; padding: 0 12px;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-border);
+  border-radius: 10px;
+  font: 16px var(--font-body); color: var(--ink);
+}
+
+/* 黑板上的主要按鈕：黃粉筆 */
+.btn-chalk {
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 56px; padding: 0 36px;
+  border: 0; border-radius: var(--radius);
+  background: var(--chalk-yellow); color: #2a2a1a;
+  box-shadow: 0 3px 0 var(--chalk-yellow-shadow);
+  font-family: var(--font-chalk); font-size: 23px; font-weight: 700;
+  cursor: pointer;
+}
+/* 黑板上的次要按鈕：粉筆框 */
+.btn-chalk-outline {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 56px; padding: 0 28px;
+  border: 2px solid rgba(243, 240, 228, 0.8); border-radius: var(--radius);
+  background: transparent; color: var(--chalk);
+  font-family: var(--font-chalk); font-size: 22px;
+  cursor: pointer;
+}
+/* 黑板上的重置類按鈕：虛線 */
+.btn-chalk-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 56px; padding: 0 22px;
+  border: 2px dashed rgba(243, 240, 228, 0.55); border-radius: var(--radius);
+  background: transparent; color: var(--chalk);
+  font-family: var(--font-chalk); font-size: 20px;
+  cursor: pointer;
+}
+.btn-chalk:disabled, .btn-chalk-outline:disabled, .btn-chalk-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 黑板上的切換（個人賽／PK 賽） */
+.chalk-segment { display: inline-flex; gap: 4px; padding: 4px; border: 2px solid rgba(243, 240, 228, 0.75); border-radius: 999px; }
+.chalk-segment button {
+  height: 44px; padding: 0 28px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--chalk);
+  font-family: var(--font-chalk); font-size: 20px; cursor: pointer;
+}
+.chalk-segment button[aria-pressed="true"] { background: var(--chalk); color: var(--board-ink); font-weight: 700; }
+
+/* 深綠實心按鈕（彈窗「知道了」、白底區域上的主要按鈕） */
+.btn-board {
+  height: 50px; padding: 0 34px; border: 0; border-radius: 10px;
+  background: var(--board); color: var(--chalk);
+  box-shadow: 0 3px 0 #1a2a20;
+  font-family: var(--font-chalk); font-size: 21px; font-weight: 700; cursor: pointer;
+}
+
+/* 和 .btn-tag 同高的 .btn-board（頁首的主要按鈕，例如「下載紀錄」） */
+.btn-board--sm {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 44px; padding: 0 18px;
+  font-family: var(--font-body); font-size: 16px;
+}
+
+.btn-line {
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 52px; padding: 0 26px; border-radius: 999px;
+  background: var(--line-green); color: #fff; text-decoration: none;
+  font-size: 18px; font-weight: 700; box-shadow: 0 3px 0 #03632e;
+}
+
+/* ---------- 標題牌、徽章 ---------- */
+/* 釘在布告欄上的小黑板，當區塊標題（例如「金幣榜」）；放兩個 .pin.pin--md 當左右的圖釘 */
+.board-sign {
+  position: relative;
+  padding: 8px 44px;
+  background: var(--board);
+  color: var(--chalk);
+  border: 5px solid var(--wood);
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(60, 35, 10, 0.35);
+  font-family: var(--font-chalk); font-size: 30px; font-weight: 700;
+  letter-spacing: 0.3em;
+  transform: rotate(-1deg);
+}
+.board-sign .pin { top: -12px; margin-left: 0; }
+.board-sign .pin:first-child { left: 18px; }
+.board-sign .pin:nth-child(2) { left: auto; right: 18px; }
+
+/* 綠色小徽章（今天加的分數） */
+.badge-green {
+  padding: 2px 8px;
+  background: var(--badge-green);
+  color: var(--badge-green-ink);
+  border-radius: 999px;
+  font-size: 15px; font-weight: 700;
+}
+
+/* 蓋在紙上的圓角印章（「第 N 位」）；.stamp--muted 是灰色的（「缺席」） */
+.stamp {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  color: var(--stamp-red);
+  font-family: var(--font-body); font-size: 12px; font-weight: 700;
+  text-decoration: none;
+  transform: rotate(-4deg);
+}
+.stamp--muted { color: var(--ink-soft); }
+
+/* ---------- 焦點樣式（鍵盤操作） ---------- */
+:where(button, a, select, input):focus-visible {
+  outline: 3px solid var(--chalk-yellow);
+  outline-offset: 3px;
+}

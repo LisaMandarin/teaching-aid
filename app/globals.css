@@ -1,3 +1,5 @@
+@import "../school-theme.css";
+
 /* 字嗨注音而已 (ButTaiwan/bpmfvs): shows only the 注音 of each character. See public/fonts for its license. */
 @font-face {
   font-family: "TeachingAid Zhuyin Only";
@@ -6,16 +8,24 @@
 }
 
 :root {
-  --bg: #f7f5f0;
-  --panel: #ffffff;
-  --ink: #1f2328;
-  --muted: #6b7280;
-  --line: #e5e1d8;
-  --accent: #2563eb;
+  /* The theme fonts, loaded with next/font in app/layout.tsx. */
+  --font-chalk: var(--font-wenkai), "Kaiti TC", serif;
+  --font-body: var(--font-noto-tc), system-ui, sans-serif;
+
+  /* Older names, pointed at the school theme's colors. */
+  --bg: var(--wall);
+  --panel: var(--paper);
+  --muted: var(--ink-soft);
+  --line: var(--paper-border);
+  --accent: var(--board);
   --danger: #dc2626;
   --success: #16a34a;
-  --team-0: #2563eb;
-  --team-1: #ea580c;
+  /* 圈圈叉叉 teams, in chalk on the board. */
+  --team-0: var(--chalk-blue);
+  --team-1: var(--chalk-orange);
+
+  /* Board text in the 繁體／簡體 fonts: the system font, as before the theme, not the chalk font. */
+  --font-board-text: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
 }
 
 * {
@@ -28,11 +38,6 @@ body {
   height: 100%;
 }
 
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
-}
 
 /* ---------- Layout ---------- */
 .shell {
@@ -42,101 +47,176 @@ body {
 
 .sidebar {
   flex-shrink: 0;
-  background: var(--panel);
-  border-right: 1px solid var(--line);
-  padding: 12px;
+  padding: 14px 12px;
   transition: width 0.2s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .sidebar.is-open {
-  width: 240px;
+  width: 264px;
 }
 
+/* Wide enough for the toggle inside the 12px wooden frame. */
 .sidebar.is-closed {
-  width: 56px;
+  width: 72px;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 教學便利通: a paper label with a little chalkboard. */
+.sidebar-logo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--font-chalk);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--heading);
+  white-space: nowrap;
+  transform: rotate(-1deg);
+}
+
+.sidebar-logo-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 25px;
+}
+
+.logo-frame {
+  fill: var(--wood);
+}
+
+.logo-board {
+  fill: var(--board);
+}
+
+.logo-chalk {
+  fill: none;
+  stroke: var(--chalk);
+  stroke-width: 1.5;
+  stroke-linecap: round;
 }
 
 .sidebar-toggle {
+  flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--paper-border);
   border-radius: 6px;
-  background: var(--panel);
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--paper-shadow);
+  color: var(--ink);
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
 }
 
-.sidebar-title {
-  margin: 20px 4px 8px;
-  font-size: 13px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .sidebar nav {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Room for the tilted cards and pins, which stick out a little. */
+  padding: 6px 6px 8px;
+  margin: 0 -6px;
   overflow-y: auto;
 }
 
-/* LINE QR code pinned to the bottom of the sidebar. */
-.sidebar-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: inherit;
-  text-decoration: none;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.sidebar-line:hover {
-  background: var(--bg);
-}
-
-.sidebar-line img {
-  flex-shrink: 0;
-  border-radius: 4px;
-}
-
-.sidebar-line small {
-  color: var(--muted);
+.sidebar-title {
+  margin: 8px 0 0;
 }
 
 .sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.sidebar-item {
-  display: block;
-  padding: 10px 12px;
-  border-radius: 6px;
+/* The pin goes at the card's top left; each card gets its own pin color. */
+.nav-card .pin {
+  left: 12px;
+  margin-left: 0;
+}
+
+.sidebar li:nth-child(4n + 2) .pin {
+  background: var(--pin-blue);
+}
+
+.sidebar li:nth-child(4n + 3) .pin {
+  background: var(--pin-gold);
+}
+
+.sidebar li:nth-child(4n + 4) .pin {
+  background: var(--pin-teal);
+}
+
+/* .nav-card tilts by its own position, but each card is alone in its <li>, so tilt by the <li>. */
+.sidebar li:nth-child(even) .nav-card {
+  transform: rotate(-0.5deg);
+}
+
+.sidebar li .nav-card[aria-current="page"] {
+  transform: rotate(-1.6deg);
+}
+
+.nav-card {
+  transition: transform 0.15s;
+}
+
+.sidebar li .nav-card:hover:not([aria-current="page"]) {
+  transform: translateY(-2px) rotate(0.5deg);
+}
+
+.nav-card-text {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* LINE QR code pinned to the bottom of the sidebar: white paper held on with tape. */
+.sidebar-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 16px 10px 10px;
   color: inherit;
   text-decoration: none;
+  font-size: 13px;
+  line-height: 1.4;
+  transform: rotate(0.8deg);
 }
 
-.sidebar-item:hover {
-  background: var(--bg);
+.sidebar-line .tape {
+  top: -12px;
+  left: 50%;
+  width: 80px;
+  height: 22px;
+  transform: translateX(-50%) rotate(-3deg);
 }
 
-.sidebar-item.is-active {
-  background: #eef2ff;
-  color: var(--accent);
-  font-weight: 600;
+.sidebar-line img {
+  flex-shrink: 0;
+}
+
+.sidebar-line small {
+  color: var(--muted);
 }
 
 .stage {
@@ -162,103 +242,157 @@ body {
   display: none;
 }
 
-/* ---------- Hangman ---------- */
-.hangman {
+/* ---------- Page header and chalkboard (shared by the pages) ---------- */
+.game {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 16px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.hangman-header {
+.page-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
 }
 
-.mute-btn {
-  padding: 6px 12px;
-  font-size: 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--ink);
+.page-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+label.btn-tag {
   cursor: pointer;
 }
 
+/* A header button that is switched on (設定, 編輯題目). */
+.btn-tag.is-on {
+  background: var(--sticky);
+  border-color: var(--chalk-yellow-shadow);
+}
+
+/* 靜音中 */
 .mute-btn[aria-pressed="true"] {
   color: var(--muted);
 }
 
-.hangman-title {
-  margin: 0;
-  font-size: 28px;
+.btn-tag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
+/* The chalkboard and its tray stay together. */
+.board-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.board-wrap .chalkboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.board-wrap .chalk-tray {
+  margin-top: -2px;
+}
+
+.chalk-tray .stick:nth-child(1) {
+  left: 40px;
+  width: 46px;
+  background: var(--chalk);
+}
+
+.chalk-tray .stick:nth-child(2) {
+  left: 96px;
+  width: 36px;
+  background: var(--chalk-yellow);
+}
+
+.chalk-tray .stick:nth-child(3) {
+  left: 142px;
+  width: 30px;
+  background: var(--chalk-pink);
+}
+
+/* A row across the top of the board: the mode switch on the left, 重新開始 on the right. */
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Status line written in chalk. */
+.status {
+  margin: 0;
+  font-size: 24px;
+  color: var(--chalk);
+}
+
+.status.is-dead {
+  color: var(--chalk-pink);
+  font-weight: 700;
+  font-size: 30px;
+}
+
+.status.is-won {
+  color: var(--chalk-yellow);
+  font-weight: 700;
+  font-size: 30px;
+}
+
+/* A team name written on the board; click to edit. */
+.board-label {
+  width: 220px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--chalk);
+  background: transparent;
+  border: 2px dashed transparent;
+  border-radius: 6px;
+}
+
+.board-label::placeholder {
+  color: var(--chalk-dim);
+}
+
+.board-label:hover {
+  border-color: var(--chalk-dim);
+}
+
+.board-label:focus {
+  outline: none;
+  border: 2px solid var(--chalk);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- Hangman ---------- */
 .board {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-}
-
-.board-label {
-  width: 220px;
-  padding: 4px 8px;
-  font: inherit;
-  font-size: 22px;
-  font-weight: 700;
-  text-align: center;
-  color: var(--ink);
-  background: transparent;
-  border: 1px dashed transparent;
-  border-radius: 6px;
-}
-
-.board-label:hover {
-  border-color: var(--line);
-}
-
-.board-label:focus {
-  outline: none;
-  border: 1px solid var(--accent);
-  background: var(--panel);
-}
-
-.board.is-won .gallows {
-  border-color: var(--success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
-}
-
-.status.is-won {
-  color: var(--success);
-  font-weight: 700;
-  font-size: 28px;
-}
-
-.mode-switch {
-  display: inline-flex;
-  padding: 4px;
-  gap: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-}
-
-.mode-btn {
-  padding: 8px 20px;
-  font-size: 16px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.mode-btn.is-active {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
 }
 
 .pk {
@@ -270,31 +404,31 @@ body {
 }
 
 .pk .gallows {
-  height: min(48vh, 440px);
+  height: min(44vh, 420px);
 }
 
 .pk-vs {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--muted);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--chalk-dim);
 }
 
+/* The gallows is drawn straight onto the board in chalk (the SVG version of .chalk-line). */
 .gallows {
   /* Sized by height so the whole game fits the viewport. */
-  height: min(55vh, 560px);
+  height: min(50vh, 520px);
   width: auto;
   aspect-ratio: 200 / 250;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--chalk);
   stroke-width: 5;
   stroke-linecap: round;
+  opacity: 0.92;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.25));
 }
 
 .gallows.is-dead {
-  stroke: var(--danger);
+  stroke: var(--chalk-pink);
 }
 
 .stroke > * {
@@ -313,29 +447,14 @@ body {
   }
 }
 
-.status {
-  margin: 0;
-  font-size: 20px;
-  color: var(--muted);
-}
-
-.status.is-dead {
-  color: var(--danger);
-  font-weight: 700;
-  font-size: 28px;
-}
-
-.controls {
-  display: flex;
-  gap: 12px;
-}
-
+/* ---------- Buttons on paper (tools pages, notices) ---------- */
 .btn {
   padding: 10px 20px;
   font-size: 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
+  border: 1.5px solid var(--paper-border);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--paper-shadow);
   color: var(--ink);
   cursor: pointer;
 }
@@ -346,48 +465,48 @@ body {
 }
 
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--board);
+  border-color: var(--board);
+  box-shadow: 0 3px 0 #1a2a20;
+  color: var(--chalk);
   font-size: 18px;
   padding: 12px 32px;
 }
 
 /* ---------- Tic-Tac-Toe ---------- */
-.ttt {
+.tag-field {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  width: 100%;
+  gap: 6px;
+  font-size: 15px;
+  color: var(--ink-soft);
 }
 
-.mute-btn.is-on {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.ttt-teams {
-  display: flex;
+/* O team | grid | X team */
+.ttt-arena {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+  align-items: center;
   gap: 24px;
-  flex-wrap: wrap;
-  justify-content: center;
+  width: 100%;
 }
 
 .ttt-team {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px 6px 6px;
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 999px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 12px 8px;
+  border: 2px dashed transparent;
+  border-radius: var(--radius);
+  opacity: 0.6;
+  transition: opacity 0.15s, border-color 0.15s;
 }
 
+/* The team whose turn it is: circled in its own chalk color. */
 .ttt-team.is-turn {
   border-color: var(--team-color);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--team-color) 20%, transparent);
+  opacity: 1;
 }
 
 .team-0 {
@@ -409,14 +528,16 @@ body {
 }
 
 .ttt-team-symbol {
-  width: 40px;
-  height: 40px;
-  border: none;
+  width: 88px;
+  height: 88px;
+  border: 4px solid var(--team-color);
   border-radius: 50%;
-  background: var(--team-color);
-  color: #fff;
-  font-size: 22px;
-  font-weight: 800;
+  background: transparent;
+  color: var(--team-color);
+  font-family: var(--font-chalk);
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 }
 
@@ -425,24 +546,30 @@ body {
 }
 
 .ttt-team-name {
-  width: 160px;
+  width: 100%;
+  max-width: 180px;
+  color: var(--team-color);
 }
 
 .ttt-status {
-  font-size: 24px;
-  color: var(--ink);
+  font-size: 26px;
+}
+
+.ttt-status.is-won {
+  font-size: 32px;
+  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .ttt-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 10px;
-  /* Sized by height so the whole game fits the viewport. */
-  width: min(58vh, 560px, 100%);
+  /* Sized by height so the whole game fits the viewport (a % width would collapse in the arena's auto column). */
+  width: min(56vh, 540px, 50vw);
   aspect-ratio: 1;
 }
 
+/* No boxes: the grid is the # drawn in chalk between the cells. */
 .ttt-cell {
   position: relative;
   container-type: size;
@@ -452,21 +579,27 @@ body {
   min-width: 0;
   padding: 8%;
   font: inherit;
-  color: var(--ink);
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 14px;
+  color: var(--chalk);
+  background: transparent;
+  border: 0 solid var(--chalk);
   overflow: hidden;
+}
+
+.ttt-cell:not(:nth-child(3n)) {
+  border-right-width: 5px;
+}
+
+.ttt-cell:nth-child(-n + 6) {
+  border-bottom-width: 5px;
 }
 
 button.ttt-cell {
   cursor: pointer;
-  transition: transform 0.1s, border-color 0.15s;
+  transition: background-color 0.15s;
 }
 
 button.ttt-cell:not(:disabled):hover {
-  border-color: var(--accent);
-  transform: scale(1.03);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 button.ttt-cell:disabled {
@@ -497,6 +630,8 @@ button.ttt-cell:disabled {
 
 .ttt-text {
   line-height: 1.1;
+  /* The chalkboard writes in the chalk font; the question text keeps the teacher's font instead. */
+  font-family: var(--font-board-text);
   font-weight: 700;
   text-align: center;
   overflow-wrap: anywhere;
@@ -526,8 +661,7 @@ button.ttt-cell:disabled {
 }
 
 .ttt-cell.is-win {
-  border-color: var(--team-color);
-  background: color-mix(in srgb, var(--team-color) 12%, var(--panel));
+  background: color-mix(in srgb, var(--team-color) 22%, transparent);
 }
 
 .ttt-mark {
@@ -535,6 +669,7 @@ button.ttt-cell:disabled {
   inset: 6%;
   fill: none;
   stroke: var(--team-color);
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.2));
   stroke-width: 11;
   stroke-linecap: round;
   pointer-events: none;
@@ -551,7 +686,6 @@ button.ttt-cell:disabled {
   justify-content: center;
   gap: 3%;
   padding: 5%;
-  border-style: dashed;
 }
 
 /* Without an image the text box fills the cell, so the text sits in the middle like in play. */
@@ -562,12 +696,13 @@ button.ttt-cell:disabled {
   width: 100%;
   padding: 4px;
   font: inherit;
+  font-family: var(--font-board-text);
   font-size: 16cqmin;
   font-weight: 700;
   text-align: center;
-  color: var(--ink);
-  background: var(--bg);
-  border: 1px solid var(--line);
+  color: var(--chalk);
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px dashed var(--chalk-dim);
   border-radius: 8px;
 }
 
@@ -601,8 +736,12 @@ button.ttt-cell:disabled {
 
 .ttt-input:focus {
   outline: none;
-  border-color: var(--accent);
-  background: var(--panel);
+  border: 2px solid var(--chalk);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ttt-input::placeholder {
+  color: var(--chalk-dim);
 }
 
 .ttt-thumb {
@@ -639,19 +778,15 @@ button.ttt-cell:disabled {
 
 .ttt-upload {
   flex-shrink: 0;
+  font-family: var(--font-body);
   font-size: 13px;
-  color: var(--accent);
+  color: var(--chalk-yellow);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .ttt-upload:hover {
   text-decoration: underline;
-}
-
-.ttt-status.is-won {
-  font-size: 32px;
-  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes pop {
@@ -668,23 +803,6 @@ button.ttt-cell:disabled {
   height: 100%;
   pointer-events: none;
   z-index: 1000;
-}
-
-.ttt-lesson {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 16px;
-  color: var(--muted);
-}
-
-.ttt-lesson select {
-  padding: 6px 10px;
-  font: inherit;
-  color: var(--ink);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
 }
 
 .ttt-import {
@@ -772,11 +890,16 @@ label.btn {
   color: var(--muted);
 }
 
-.ttt-options {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 20px;
+.ttt-cell .ttt-img-missing {
+  color: var(--chalk-orange);
+}
+
+.ttt-cell .ttt-img-missing small {
+  color: var(--chalk-dim);
+}
+
+.game > .ttt-notice {
+  align-self: center;
 }
 
 
@@ -906,32 +1029,16 @@ label.btn {
 }
 
 /* ---------- Materials ---------- */
+/* A PDF uses the whole stage, so no max width. */
 .materials {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   flex: 1;
   min-width: 0;
-  border-radius: 12px;
-  outline: 3px dashed transparent;
-  outline-offset: 4px;
-}
-
-.materials.is-dragging {
-  outline-color: var(--accent);
-}
-
-.materials-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  max-width: none;
 }
 
 .materials-title {
   flex: 1;
   min-width: 0;
-  margin: 0;
-  font-size: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -943,9 +1050,9 @@ label.btn {
   justify-content: center;
   flex: 1;
   min-height: 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(60, 35, 10, 0.28);
   overflow: hidden;
 }
 
@@ -961,28 +1068,47 @@ label.btn {
   object-fit: contain;
 }
 
+/* Upload: a sheet of paper pinned to a framed cork board, with the drop area marked in dashes. */
+.drop-board {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: 40px 24px;
+}
+
 .materials-drop {
+  display: flex;
+  width: min(640px, 100%);
+  padding: 28px;
+  cursor: pointer;
+  transform: rotate(-0.6deg);
+}
+
+.materials-drop-zone {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  flex: 1;
-  padding: 24px;
+  padding: 40px 24px;
   text-align: center;
   font-size: 20px;
-  background: var(--panel);
-  border: 2px dashed var(--line);
-  border-radius: 12px;
-  cursor: pointer;
+  border: 3px dashed var(--paper-border);
+  border-radius: 10px;
+  transition: border-color 0.15s, background-color 0.15s;
 }
 
-.materials-drop:hover {
-  border-color: var(--accent);
+.materials-drop:hover .materials-drop-zone,
+.is-dragging .materials-drop-zone {
+  border-color: var(--board);
+  background: color-mix(in srgb, var(--board) 6%, transparent);
 }
 
 .materials-drop.is-busy {
-  opacity: 0.5;
+  opacity: 0.6;
   pointer-events: none;
 }
 
@@ -1037,9 +1163,6 @@ label.btn {
   margin: 0;
   padding: 0;
   list-style: none;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
 }
 
 .resizer-row {
@@ -1145,31 +1268,93 @@ label.btn {
   font-size: 15px;
 }
 
+/* Title and hint side by side, the hint on the title's baseline. */
+.rewards-heading {
+  /* Takes the room left by the buttons, so a long hint wraps here instead of pushing them onto a new line. */
+  flex: 1 1 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  min-width: 280px;
+}
+
+/* The cork board holding the 金幣榜 sign and the students' cards. */
+.rewards-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  padding: 30px 40px 36px;
+}
+
 .rewards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 34px 32px;
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.rewards-card {
+@media (max-width: 1100px) {
+  .rewards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Each card hangs a little crooked, and gets its own pin color. */
+.rewards-grid li {
   position: relative;
+}
+
+.rewards-grid li:nth-child(8n + 1) { transform: rotate(-1.2deg); }
+.rewards-grid li:nth-child(8n + 2) { transform: rotate(0.8deg); }
+.rewards-grid li:nth-child(8n + 3) { transform: rotate(-0.4deg); }
+.rewards-grid li:nth-child(8n + 4) { transform: rotate(1.1deg); }
+.rewards-grid li:nth-child(8n + 5) { transform: rotate(0.6deg); }
+.rewards-grid li:nth-child(8n + 6) { transform: rotate(-1deg); }
+.rewards-grid li:nth-child(8n + 7) { transform: rotate(1.2deg); }
+.rewards-grid li:nth-child(8n + 8) { transform: rotate(-0.6deg); }
+
+.rewards-grid li:nth-child(4n + 2) .pin { background: var(--pin-blue); }
+.rewards-grid li:nth-child(4n + 3) .pin { background: var(--pin-gold); }
+.rewards-grid li:nth-child(4n + 4) .pin { background: var(--pin-teal); }
+
+/* Every third card is on the warmer paper. */
+.rewards-grid li:nth-child(3n + 2) .rewards-card {
+  background: var(--paper-warm);
+}
+
+/* The whole card is the button that drops a coin in. */
+.rewards-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 12px 12px 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  gap: 10px;
+  width: 100%;
+  padding: 22px 12px 16px;
+  border: 0;
+  box-shadow: 0 3px 5px rgba(60, 35, 10, 0.3);
+  font-family: var(--font-body);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.rewards-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 10px rgba(60, 35, 10, 0.3);
 }
 
 .rewards-name {
   max-width: 100%;
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--font-chalk);
+  font-size: 26px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1177,16 +1362,13 @@ label.btn {
 
 .chest {
   position: relative;
-  width: 130px;
+  display: block;
+  width: 116px;
   /* Room above the chest for the coin to fall through. */
-  padding: 44px 0 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  padding-top: 32px;
 }
 
-.chest:active .chest-body {
+.rewards-card:active .chest-body {
   transform: scale(0.96);
 }
 
@@ -1203,12 +1385,25 @@ label.btn {
   width: 100%;
 }
 
-.coin,
-.coin-icon {
-  display: inline-block;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #fef08a, #facc15 45%, #ca8a04);
-  box-shadow: inset 0 0 0 2px #a16207;
+.chest-lid {
+  fill: var(--chest-lid);
+}
+
+.chest-gold {
+  fill: var(--coin);
+}
+
+.chest-inside {
+  fill: var(--chest-inside);
+}
+
+.chest-coins {
+  fill: var(--coin);
+  stroke: var(--coin-edge);
+}
+
+.chest-body-wood {
+  fill: var(--chest-wood);
 }
 
 .coin {
@@ -1218,40 +1413,51 @@ label.btn {
   width: 30px;
   height: 30px;
   margin-left: -15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--coin) 40%, white), var(--coin) 45%, var(--coin-edge));
+  box-shadow: inset 0 0 0 2px var(--coin-edge);
   pointer-events: none;
   z-index: 1;
   animation: coin-drop 0.5s cubic-bezier(0.5, 0, 1, 1) forwards;
 }
 
 .coin-icon {
+  display: inline-block;
+  box-sizing: border-box;
   width: 22px;
   height: 22px;
+  border-radius: 50%;
+  background: var(--coin);
+  border: 2px solid var(--coin-edge);
 }
 
 .rewards-count {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 700;
-  color: #a16207;
+  line-height: 1;
+  color: var(--coin-ink);
   font-variant-numeric: tabular-nums;
 }
 
-.rewards-today {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--success);
+/* Coins taken back below where the class started. */
+.rewards-today.is-down {
+  background: var(--paper-shadow);
+  color: var(--ink-soft);
 }
 
+/* −1: outside the card button (a button can't hold another), in the card's top right corner. */
 .rewards-undo {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 1;
   padding: 2px 8px;
   font-size: 13px;
   color: var(--muted);
-  background: none;
+  background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 6px;
   cursor: pointer;
@@ -1259,7 +1465,7 @@ label.btn {
   transition: opacity 0.15s;
 }
 
-.rewards-card:hover .rewards-undo,
+.rewards-grid li:hover .rewards-undo,
 .rewards-undo:focus-visible {
   opacity: 1;
 }
@@ -1298,9 +1504,6 @@ label.btn {
 
 /* ---------- Name draw ---------- */
 .draw {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -1313,58 +1516,86 @@ label.btn {
   outline-color: var(--accent);
 }
 
+/* Chalkboard on the left, the class list on the right. */
 .draw-body {
   display: flex;
-  gap: 16px;
+  gap: 28px;
   flex: 1;
   min-height: 0;
 }
 
-.draw-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
+.draw-body > .board-wrap {
   flex: 1;
   min-width: 0;
-  padding: 24px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+}
+
+.board-wrap .draw-stage {
+  flex: 1;
+  justify-content: center;
+  gap: 18px;
+  padding: 28px;
 }
 
 .draw-result {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.3em;
+  min-height: 190px;
   max-width: 100%;
-  font-size: clamp(48px, 8vw, 96px);
-  font-weight: bold;
-  line-height: 1.2;
   text-align: center;
   overflow-wrap: anywhere;
 }
 
-.draw-result.is-flicker {
-  color: var(--muted);
-}
-
-.draw-name {
-  color: #b91c1c;
+/* 第 N 位, the name in yellow chalk, and a chalk line under it. */
+.draw-picked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
   /* Shows up once the stick has landed in front of the cup. */
   animation: draw-pop 0.45s 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+.draw-order {
+  font-size: 22px;
+  color: var(--chalk-dim);
+}
+
+.draw-name,
+.draw-flicker {
+  font-size: clamp(64px, 9vw, 132px);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.draw-name {
+  color: var(--chalk-yellow);
+  text-shadow: 0 0 2px rgba(255, 240, 180, 0.5), 0 0 12px rgba(242, 214, 117, 0.25);
+}
+
+/* Names flashing by while the cup shakes. */
+.draw-flicker {
+  color: var(--chalk-dim);
+}
+
+.draw-underline {
+  width: 220px;
+  max-width: 100%;
+  height: 5px;
+  margin-top: 6px;
+  opacity: 0.6;
+  transform: rotate(-1deg);
+}
+
 .draw-placeholder {
-  font-size: 0.5em;
-  color: var(--muted);
+  font-size: 40px;
+  color: var(--chalk-dim);
 }
 
 .draw-cup-wrap {
   position: relative;
-  width: 225px;
+  width: 180px;
 }
 
 .draw-cup {
@@ -1378,11 +1609,40 @@ label.btn {
   animation: cup-shake 0.2s ease-in-out infinite;
 }
 
+/* The cup and sticks, in the theme's colors. */
+.cup-body {
+  fill: var(--cup-dark);
+}
+
+.cup-rim {
+  fill: var(--cup);
+  stroke: var(--cup-rim-shadow);
+}
+
+.cup-stripe {
+  stroke: var(--chalk-yellow);
+}
+
+.stick-body {
+  fill: var(--stick-wood);
+  stroke: var(--stick-edge);
+}
+
+.draw-picked-rise .stick-body,
+.draw-picked-front .stick-body {
+  fill: var(--stick-wood-light);
+}
+
+.stick-tip {
+  fill: var(--cup);
+  stroke: var(--cup-rim-shadow);
+}
+
 .draw-stick-name {
   writing-mode: vertical-rl;
   text-orientation: upright;
   font-weight: bold;
-  fill: #7c2d12;
+  fill: var(--stick-ink);
 }
 
 /* Sticks bouncing and knocking about inside the shaking cup. */
@@ -1409,33 +1669,57 @@ label.btn {
 }
 
 .draw-btn {
-  font-size: 22px;
-  padding: 14px 40px;
+  height: 60px;
+  padding: 0 48px;
+  font-size: 26px;
 }
 
 .draw-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  font-size: 20px;
+  gap: 12px;
+  font-size: 24px;
 }
 
 .draw-empty p {
   margin: 0;
 }
 
+.draw-left {
+  margin: 0;
+  font-size: 20px;
+  color: var(--chalk-dim);
+}
+
+.draw-left strong {
+  color: var(--chalk);
+}
+
+/* The class list: notebook paper taped to the wall. */
 .draw-list {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 260px;
+  gap: 10px;
+  /* Wide enough for a three-character name and its 第 N 位 stamp side by side. */
+  width: 350px;
   flex-shrink: 0;
-  padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow-y: auto;
+  padding: 30px 18px 22px 46px;
+  transform: rotate(0.6deg);
+}
+
+.draw-list .tape {
+  top: -12px;
+  left: 50%;
+  width: 120px;
+  margin-left: -60px;
+  transform: rotate(-3deg);
+}
+
+.draw-list-head .btn-tag {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .draw-list-head {
@@ -1445,82 +1729,97 @@ label.btn {
   gap: 8px;
 }
 
-.draw-restart {
-  padding: 6px 12px;
-  font-size: 14px;
+.draw-list-head h2 {
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-chalk);
+  font-size: 24px;
+  font-weight: 700;
 }
 
 .draw-option {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  min-height: 36px;
+  font-size: 16px;
   cursor: pointer;
 }
 
-.draw-list-hint {
+.draw-option input {
+  width: 18px;
+  height: 18px;
   margin: 0;
-  font-size: 13px;
-  color: var(--muted);
+  accent-color: var(--board);
 }
 
+.draw-list-hint {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* Names in two columns; only the names scroll, so the tape and heading stay put. */
 .draw-list ul {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 2px 10px;
+  flex: 1;
+  min-height: 0;
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow-y: auto;
 }
 
 .draw-list-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 6px;
   width: 100%;
-  padding: 6px 10px;
-  font: inherit;
-  font-size: 16px;
+  height: 40px;
+  padding: 0 8px;
+  font-family: var(--font-chalk);
+  font-size: 19px;
   text-align: left;
   color: var(--ink);
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--paper-rule);
+  border-radius: 0;
   cursor: pointer;
 }
 
-.draw-list-item:hover:not(:disabled) {
-  border-color: var(--line);
+.draw-list-item:disabled {
+  cursor: default;
 }
 
-.draw-list-item.is-drawn .draw-list-name {
-  color: var(--muted);
+/* Drawn: marked with a yellow highlighter, and stamped 第 N 位. */
+.draw-list-item.is-drawn {
+  background: var(--marker-yellow);
+}
+
+/* Away today: crossed out. */
+.draw-list-item.is-absent {
+  color: var(--ink-faint);
 }
 
 .draw-list-item.is-absent .draw-list-name {
-  color: var(--muted);
   text-decoration: line-through;
 }
 
+.draw-list-item .stamp {
+  padding: 1px 6px;
+}
+
 .draw-list-name {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.draw-badge {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  font-size: 12px;
-  color: #b91c1c;
-  background: #fee2e2;
-  border-radius: 999px;
-}
-
-.draw-badge.is-absent {
-  color: var(--muted);
-  background: var(--bg);
 }
 
 @keyframes cup-shake {
@@ -1591,22 +1890,14 @@ label.btn {
 }
 
 /* ---------- 開禮物 ---------- */
-.gifts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-
 .gifts-settings {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(60, 35, 10, 0.28);
 }
 
 .gifts-settings-row {
@@ -1650,15 +1941,7 @@ label.btn {
 }
 
 .gifts-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
   flex: 1;
-  padding: 24px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
 }
 
 .gifts-stage.is-boom {
@@ -1682,20 +1965,20 @@ label.btn {
 }
 
 .gifts-result-text.kind-good {
-  color: #b45309;
+  color: var(--chalk-yellow);
 }
 
 .gifts-result-text.kind-bad {
-  color: var(--muted);
+  color: var(--chalk-dim);
 }
 
 .gifts-result-text.kind-bomb {
-  color: var(--danger);
+  color: var(--chalk-pink);
 }
 
 .gifts-placeholder {
   font-size: 0.6em;
-  color: var(--muted);
+  color: var(--chalk-dim);
 }
 
 .gifts-grid {
@@ -1857,6 +2140,8 @@ label.btn {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   transform: translateX(-50%);
   text-align: center;
+  color: var(--ink);
+  font-family: var(--font-body);
 }
 
 .gift-item.kind-bad {
@@ -1979,51 +2264,55 @@ label.btn {
 }
 
 /* ---------- Welcome dialog ---------- */
+/* Lined paper: every block is a whole number of 36px lines, so the text sits on the ruled lines. */
 .welcome {
-  width: min(440px, calc(100vw - 32px));
-  padding: 28px;
+  width: min(560px, calc(100vw - 32px));
+  padding: 26px 28px 26px 76px;
   border: none;
-  border-radius: 12px;
-  background: var(--panel);
+  border-radius: 2px;
   color: var(--ink);
-  line-height: 1.7;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  /* Let the tape stick out past the top edge. */
+  overflow: visible;
 }
 
 .welcome::backdrop {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(30, 20, 5, 0.45);
+}
+
+.welcome-tape-l {
+  top: -12px;
+  left: -26px;
+  transform: rotate(-32deg);
+}
+
+.welcome-tape-r {
+  top: -12px;
+  right: -26px;
+  transform: rotate(32deg);
 }
 
 .welcome h2 {
-  margin: 0 0 12px;
-  font-size: 22px;
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 26px;
+  line-height: 72px;
+  color: var(--heading);
 }
 
 .welcome p {
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .welcome-line {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin: 16px 0;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--bg);
+  height: 144px;
 }
 
-.line-button {
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: #06c755;
-  color: #fff;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.line-button:hover {
-  background: #05b04b;
+.welcome-line img {
+  width: 108px;
+  height: 108px;
 }
 
 .welcome-footer {
@@ -2031,6 +2320,7 @@ label.btn {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  height: 72px;
 }
 
 .welcome-footer label {
@@ -2038,16 +2328,6 @@ label.btn {
   align-items: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.welcome-footer button {
-  padding: 8px 20px;
-  border: none;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
   font-size: 15px;
   cursor: pointer;
 }

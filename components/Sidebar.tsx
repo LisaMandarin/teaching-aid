@@ -25,34 +25,55 @@ export default function Sidebar() {
   const onMaterials = pathname === "/materials";
 
   const item = (active: boolean) => ({
-    className: `sidebar-item ${active ? "is-active" : ""}`,
+    className: "nav-card",
     "aria-current": active ? ("page" as const) : undefined,
   });
 
+  // A paper card pinned to the cork board.
+  const card = (label: React.ReactNode) => (
+    <>
+      <span className="pin" aria-hidden="true" />
+      <span className="nav-card-text">{label}</span>
+    </>
+  );
+
   return (
-    <aside className={`sidebar ${open ? "is-open" : "is-closed"}`}>
-      <button
-        className="sidebar-toggle"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "收合側欄" : "展開側欄"}
-        aria-expanded={open}
-      >
-        {open ? "«" : "»"}
-      </button>
+    <aside className={`sidebar cork cork--sidebar ${open ? "is-open" : "is-closed"}`}>
+      <div className="sidebar-head">
+        {open && (
+          <p className="sidebar-logo paper">
+            <svg className="sidebar-logo-icon" viewBox="0 0 32 26" aria-hidden="true">
+              <rect x="1" y="1" width="30" height="20" rx="2" className="logo-frame" />
+              <rect x="4" y="4" width="24" height="14" className="logo-board" />
+              <path d="M8 9 q3 -3 6 0 t6 0" className="logo-chalk" />
+              <rect x="6" y="21" width="20" height="3" rx="1" className="logo-frame" />
+            </svg>
+            教學便利通
+          </p>
+        )}
+        <button
+          className="sidebar-toggle"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "收合側欄" : "展開側欄"}
+          aria-expanded={open}
+        >
+          {open ? "«" : "»"}
+        </button>
+      </div>
       {open && (
         <nav>
-          <h2 className="sidebar-title">遊戲</h2>
+          <h2 className="sidebar-title tape-label">遊戲</h2>
           <ul>
             {games.map((g) => (
               <li key={g.href}>
                 <Link href={g.href} {...item(pathname === g.href)}>
-                  {g.name}
+                  {card(g.name)}
                 </Link>
               </li>
             ))}
           </ul>
 
-          <h2 className="sidebar-title">教材</h2>
+          <h2 className="sidebar-title tape-label">教材</h2>
           <ul>
             {items.map((m) => (
               <li key={m.id}>
@@ -62,23 +83,23 @@ export default function Sidebar() {
                   title={m.name}
                   {...item(onMaterials && selectedId === m.id)}
                 >
-                  {m.kind === "pdf" ? "📄" : "🖼️"} {m.name}
+                  {card(`${m.kind === "pdf" ? "📄" : "🖼️"} ${m.name}`)}
                 </Link>
               </li>
             ))}
             <li>
               <Link href="/materials" onClick={() => selectMaterial(null)} {...item(onMaterials && selectedId === null)}>
-                ＋ 上傳教材
+                {card("＋ 上傳教材")}
               </Link>
             </li>
           </ul>
 
-          <h2 className="sidebar-title">工具</h2>
+          <h2 className="sidebar-title tape-label">工具</h2>
           <ul>
             {tools.map((t) => (
               <li key={t.href}>
                 <Link href={t.href} {...item(pathname === t.href)}>
-                  {t.name}
+                  {card(t.name)}
                 </Link>
               </li>
             ))}
@@ -86,7 +107,8 @@ export default function Sidebar() {
         </nav>
       )}
       {open && (
-        <a className="sidebar-line" href={LINE_URL} target="_blank" rel="noopener noreferrer">
+        <a className="sidebar-line paper" href={LINE_URL} target="_blank" rel="noopener noreferrer">
+          <span className="tape" aria-hidden="true" />
           <img src={LINE_QR} alt="LINE 官方帳號 QR code" width={64} height={64} />
           <span>
             加入 LINE 官方帳號

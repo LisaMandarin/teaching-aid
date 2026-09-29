@@ -27,8 +27,10 @@ export default function WelcomeDialog() {
   };
 
   return (
-    <dialog ref={ref} className="welcome" onCancel={close}>
-      <h2>歡迎使用 Teaching Aid 👋</h2>
+    <dialog ref={ref} className="welcome lined-paper" onCancel={close}>
+      <span className="tape welcome-tape-l" aria-hidden="true" />
+      <span className="tape welcome-tape-r" aria-hidden="true" />
+      <h2>歡迎使用教學便利通</h2>
       <p>
         本網站目前<strong>完全免費</strong>，歡迎老師們盡情使用！
       </p>
@@ -39,7 +41,7 @@ export default function WelcomeDialog() {
 
       <div className="welcome-line">
         <img src={LINE_QR} alt="LINE 官方帳號 QR code" width={120} height={120} />
-        <a className="line-button" href={LINE_URL} target="_blank" rel="noopener noreferrer">
+        <a className="btn-line" href={LINE_URL} target="_blank" rel="noopener noreferrer">
           加入 LINE 官方帳號
         </a>
       </div>
@@ -49,7 +51,9 @@ export default function WelcomeDialog() {
           <input type="checkbox" checked={hide} onChange={(e) => setHide(e.target.checked)} />
           以後不再顯示
         </label>
-        <button onClick={close}>知道了</button>
+        <button className="btn-board" onClick={close}>
+          知道了
+        </button>
       </div>
     </dialog>
   );

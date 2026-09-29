@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Chalkboard from "./Chalkboard";
+import DropZone from "./DropZone";
+import { DownloadIcon, FolderIcon, RefreshIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { downloadNamesTemplate, parseNames } from "@/lib/draw";
 import { playDing, playRattle } from "@/lib/sounds";
 
@@ -33,11 +36,10 @@ function Stick({ x, top, name }: { x: number; top: number; name: string }) {
   const size = Math.min(13, (body - 12) / Math.max(name.length, 1));
   return (
     <>
-      <rect x={x - w / 2} y={top + tip - 2} width={w} height={body + 2} rx="2" fill="#ecc98f" stroke="#b7894a" strokeWidth="1" />
+      <rect className="stick-body" x={x - w / 2} y={top + tip - 2} width={w} height={body + 2} rx="2" strokeWidth="1" />
       <path
+        className="stick-tip"
         d={`M${x - w / 2} ${top + tip} L${x - w / 2} ${top + 14} L${x} ${top} L${x + w / 2} ${top + 14} L${x + w / 2} ${top + tip} Z`}
-        fill="#dc2626"
-        stroke="#991b1b"
         strokeWidth="1"
       />
       <text x={x} y={top + tip + 6} className="draw-stick-name" fontSize={size}>
@@ -79,10 +81,10 @@ function Cup({ names, shaking, picked }: { names: string[]; shaking: boolean; pi
         </g>
       )}
       {/* Cup: red, with a rim and two gold lines under it. */}
-      <path d="M24 142 L176 142 L166 232 Q100 237 34 232 Z" fill="#dc2626" />
-      <rect x="18" y="126" width="164" height="16" rx="3" fill="#dc2626" stroke="#b91c1c" strokeWidth="1.5" />
-      <line x1="25" y1="151" x2="175" y2="151" stroke="#facc15" strokeWidth="3" />
-      <line x1="25.5" y1="160" x2="174.5" y2="160" stroke="#facc15" strokeWidth="3" />
+      <path className="cup-body" d="M24 142 L176 142 L166 232 Q100 237 34 232 Z" />
+      <rect className="cup-rim" x="18" y="126" width="164" height="16" rx="3" strokeWidth="1.5" />
+      <line className="cup-stripe" x1="25" y1="151" x2="175" y2="151" strokeWidth="3" />
+      <line className="cup-stripe" x1="25.5" y1="160" x2="174.5" y2="160" strokeWidth="3" />
       {/* ...then, once clear of the rim, drops down in front of the cup. */}
       {picked && (
         <g key={`front-${picked.key}`} className="draw-picked-front">
@@ -176,8 +178,9 @@ export default function NameDraw() {
   };
 
   const picker = (
-    <label className="btn">
-      📂 換一個名單
+    <label className="btn-tag">
+      <FolderIcon />
+      換一個名單
       <input
         type="file"
         accept=".xlsx"
@@ -193,7 +196,7 @@ export default function NameDraw() {
 
   return (
     <div
-      className={`draw ${dragging ? "is-dragging" : ""}`}
+      className={`game draw ${dragging ? "is-dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -207,22 +210,23 @@ export default function NameDraw() {
         void open(e.dataTransfer.files[0]);
       }}
     >
-      <div className="materials-toolbar">
-        <h1 className="materials-title">抽籤筒</h1>
+      <header className="page-header">
+        <h1 className="page-title">抽籤筒</h1>
         {list && (
-          <>
+          <div className="page-tools">
             <button
-              className="mute-btn"
+              className="btn-tag mute-btn"
               onClick={() => setMuted((m) => !m)}
               aria-pressed={muted}
               title={muted ? "開啟音效" : "靜音"}
             >
-              {muted ? "🔇 靜音中" : "🔊 音效開"}
+              {muted ? <SoundOffIcon /> : <SoundOnIcon />}
+              {muted ? "靜音中" : "音效開"}
             </button>
             {picker}
-          </>
+          </div>
         )}
-      </div>
+      </header>
 
       {error && (
         <div className="ttt-notice is-warn">
@@ -245,8 +249,7 @@ export default function NameDraw() {
 
       {!loaded ? null : !list ? (
         <>
-          <label className="materials-drop">
-            <span className="materials-drop-icon">🎋</span>
+          <DropZone icon="🎋">
             <strong>點這裡選擇學生名單的 Excel 檔，或把檔案拖進來</strong>
             <span className="materials-drop-hint">第一欄「學生」，從第二列開始每列一位學生（「我的獎勵」的檔案也可以用）</span>
             <input
@@ -258,20 +261,23 @@ export default function NameDraw() {
                 e.target.value = "";
               }}
             />
-          </label>
-          <button className="btn rewards-template" onClick={() => void downloadNamesTemplate()}>
-            ⬇️ 下載 Excel 範本
+          </DropZone>
+          <button className="btn-tag rewards-template" onClick={() => void downloadNamesTemplate()}>
+            <DownloadIcon />
+            下載 Excel 範本
           </button>
         </>
       ) : (
         <div className="draw-body">
-          <section className="draw-stage">
+          <Chalkboard className="draw-stage">
             <div className={`draw-result ${shaking ? "is-flicker" : ""}`} aria-live="polite">
               {shaking ? (
-                flicker
+                <span className="draw-flicker">{flicker}</span>
               ) : current ? (
-                <span key={drawCount} className="draw-name">
-                  {current}
+                <span key={drawCount} className="draw-picked">
+                  <span className="draw-order">第 {list.history.length} 位</span>
+                  <span className="draw-name">{current}</span>
+                  <span className="draw-underline chalk-line" aria-hidden="true" />
                 </span>
               ) : (
                 <span className="draw-placeholder">準備好了嗎？</span>
@@ -287,27 +293,32 @@ export default function NameDraw() {
             </div>
 
             {pool.length > 0 ? (
-              <button className="btn btn-primary draw-btn" onClick={draw} disabled={shaking}>
-                {shaking ? "抽籤中…" : "🎋 抽一支籤"}
+              <button className="btn-chalk draw-btn" onClick={draw} disabled={shaking}>
+                {shaking ? "抽籤中…" : "抽一支籤"}
               </button>
             ) : (
               <div className="draw-empty">
                 <p>{list.noRepeat && list.history.length > 0 ? "🎉 每個人都抽過了！" : "籤筒裡沒有籤了。"}</p>
                 {list.history.length > 0 && (
-                  <button className="btn btn-primary" onClick={() => setList((l) => l && { ...l, history: [] })}>
-                    🔄 全部放回去
+                  <button className="btn-chalk" onClick={() => setList((l) => l && { ...l, history: [] })}>
+                    <RefreshIcon />
+                    全部放回去
                   </button>
                 )}
               </div>
             )}
-            <p className="rewards-hint">籤筒裡還有 {pool.length} 支籤</p>
-          </section>
+            <p className="draw-left">
+              籤筒裡還有 <strong>{pool.length}</strong> 支籤
+            </p>
+          </Chalkboard>
 
-          <aside className="draw-list">
+          <aside className="draw-list margin-paper" aria-label="名單">
+            <span className="tape" aria-hidden="true" />
             <div className="draw-list-head">
-              <strong>名單（{list.names.length} 人）</strong>
-              <button className="btn draw-restart" onClick={restart} disabled={list.history.length === 0 || shaking}>
-                🔄 重新開始
+              <h2>名單（{list.names.length} 人）</h2>
+              <button className="btn-tag btn-tag--sm" onClick={restart} disabled={list.history.length === 0 || shaking}>
+                <RefreshIcon />
+                重新開始
               </button>
             </div>
             <label className="draw-option">
@@ -329,13 +340,15 @@ export default function NameDraw() {
                       className={`draw-list-item ${absent ? "is-absent" : ""} ${order !== -1 ? "is-drawn" : ""}`}
                       onClick={() => toggleAbsent(i)}
                       disabled={shaking}
+                      aria-pressed={absent}
+                      aria-label={`${name}${order !== -1 ? `，已抽到第 ${order + 1} 位` : ""}${absent ? "，缺席" : ""}，點一下切換缺席`}
                       title={absent ? "點一下取消缺席" : "點一下標成缺席"}
                     >
                       <span className="draw-list-name">{name}</span>
                       {absent ? (
-                        <span className="draw-badge is-absent">缺席</span>
+                        <span className="stamp stamp--muted">缺席</span>
                       ) : (
-                        order !== -1 && <span className="draw-badge">第 {order + 1} 位</span>
+                        order !== -1 && <span className="stamp">第 {order + 1} 位</span>
                       )}
                     </button>
                   </li>
