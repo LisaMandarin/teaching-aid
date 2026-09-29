@@ -1268,37 +1268,93 @@ label.btn {
   font-size: 15px;
 }
 
+/* Title and hint side by side, the hint on the title's baseline. */
+.rewards-heading {
+  /* Takes the room left by the buttons, so a long hint wraps here instead of pushing them onto a new line. */
+  flex: 1 1 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  min-width: 280px;
+}
+
+/* The cork board holding the 金幣榜 sign and the students' cards. */
+.rewards-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  padding: 30px 40px 36px;
+}
+
 .rewards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 34px 32px;
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.rewards-card {
+@media (max-width: 1100px) {
+  .rewards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Each card hangs a little crooked, and gets its own pin color. */
+.rewards-grid li {
   position: relative;
+}
+
+.rewards-grid li:nth-child(8n + 1) { transform: rotate(-1.2deg); }
+.rewards-grid li:nth-child(8n + 2) { transform: rotate(0.8deg); }
+.rewards-grid li:nth-child(8n + 3) { transform: rotate(-0.4deg); }
+.rewards-grid li:nth-child(8n + 4) { transform: rotate(1.1deg); }
+.rewards-grid li:nth-child(8n + 5) { transform: rotate(0.6deg); }
+.rewards-grid li:nth-child(8n + 6) { transform: rotate(-1deg); }
+.rewards-grid li:nth-child(8n + 7) { transform: rotate(1.2deg); }
+.rewards-grid li:nth-child(8n + 8) { transform: rotate(-0.6deg); }
+
+.rewards-grid li:nth-child(4n + 2) .pin { background: var(--pin-blue); }
+.rewards-grid li:nth-child(4n + 3) .pin { background: var(--pin-gold); }
+.rewards-grid li:nth-child(4n + 4) .pin { background: var(--pin-teal); }
+
+/* Every third card is on the warmer paper. */
+.rewards-grid li:nth-child(3n + 2) .rewards-card {
+  background: var(--paper-warm);
+}
+
+/* The whole card is the button that drops a coin in. */
+.rewards-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 14px 12px;
+  gap: 10px;
+  width: 100%;
+  padding: 22px 12px 16px;
+  border: 0;
+  box-shadow: 0 3px 5px rgba(60, 35, 10, 0.3);
+  font-family: var(--font-body);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
-/* Each student's card is pinned up; tilt every other one a little, like .nav-card. */
-.rewards-card:nth-child(odd) {
-  transform: rotate(0.6deg);
-}
-
-.rewards-card:nth-child(even) {
-  transform: rotate(-0.6deg);
+.rewards-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 10px rgba(60, 35, 10, 0.3);
 }
 
 .rewards-name {
   max-width: 100%;
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--font-chalk);
+  font-size: 26px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1306,16 +1362,13 @@ label.btn {
 
 .chest {
   position: relative;
-  width: 130px;
+  display: block;
+  width: 116px;
   /* Room above the chest for the coin to fall through. */
-  padding: 44px 0 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  padding-top: 32px;
 }
 
-.chest:active .chest-body {
+.rewards-card:active .chest-body {
   transform: scale(0.96);
 }
 
@@ -1332,12 +1385,25 @@ label.btn {
   width: 100%;
 }
 
-.coin,
-.coin-icon {
-  display: inline-block;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #fef08a, #facc15 45%, #ca8a04);
-  box-shadow: inset 0 0 0 2px #a16207;
+.chest-lid {
+  fill: var(--chest-lid);
+}
+
+.chest-gold {
+  fill: var(--coin);
+}
+
+.chest-inside {
+  fill: var(--chest-inside);
+}
+
+.chest-coins {
+  fill: var(--coin);
+  stroke: var(--coin-edge);
+}
+
+.chest-body-wood {
+  fill: var(--chest-wood);
 }
 
 .coin {
@@ -1347,40 +1413,51 @@ label.btn {
   width: 30px;
   height: 30px;
   margin-left: -15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--coin) 40%, white), var(--coin) 45%, var(--coin-edge));
+  box-shadow: inset 0 0 0 2px var(--coin-edge);
   pointer-events: none;
   z-index: 1;
   animation: coin-drop 0.5s cubic-bezier(0.5, 0, 1, 1) forwards;
 }
 
 .coin-icon {
+  display: inline-block;
+  box-sizing: border-box;
   width: 22px;
   height: 22px;
+  border-radius: 50%;
+  background: var(--coin);
+  border: 2px solid var(--coin-edge);
 }
 
 .rewards-count {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 700;
-  color: #a16207;
+  line-height: 1;
+  color: var(--coin-ink);
   font-variant-numeric: tabular-nums;
 }
 
-.rewards-today {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--success);
+/* Coins taken back below where the class started. */
+.rewards-today.is-down {
+  background: var(--paper-shadow);
+  color: var(--ink-soft);
 }
 
+/* −1: outside the card button (a button can't hold another), in the card's top right corner. */
 .rewards-undo {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 1;
   padding: 2px 8px;
   font-size: 13px;
   color: var(--muted);
-  background: none;
+  background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 6px;
   cursor: pointer;
@@ -1388,7 +1465,7 @@ label.btn {
   transition: opacity 0.15s;
 }
 
-.rewards-card:hover .rewards-undo,
+.rewards-grid li:hover .rewards-undo,
 .rewards-undo:focus-visible {
   opacity: 1;
 }

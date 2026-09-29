@@ -14,6 +14,7 @@
   /* 牆面／紙張 */
   --wall: #efe6d3;
   --paper: #fffdf5;
+  --paper-warm: #fbf3d4;     /* 偏黃的紙（卡片交錯用） */
   --paper-border: #cbbd9c;
   --paper-shadow: #d9ccae;
   --sticky: #f7df7a;
@@ -44,6 +45,18 @@
   --pin-blue: #3f7fc4;
   --pin-gold: #e0a93a;
   --pin-teal: #4fae9e;
+
+  /* 金幣、寶箱（我的獎勵） */
+  --coin: #f2c33d;
+  --coin-edge: #c89420;
+  --coin-ink: #8a4b1c;       /* 金幣數字 */
+  --chest-lid: #8a4b1c;
+  --chest-wood: #b5642a;
+  --chest-inside: #5a3010;
+
+  /* 徽章 */
+  --badge-green: #dcefd9;
+  --badge-green-ink: #1f6b3a;
 
   /* 其他 */
   --line-green: #05873f;     /* 加深過，白字才夠對比 */
@@ -136,6 +149,7 @@ body {
   box-shadow: 0 2px 3px rgba(60, 35, 10, 0.28);
 }
 .sticky { background: var(--sticky); }
+.paper--warm { background: var(--paper-warm); }
 .tilt-l { transform: rotate(-1.5deg); }
 .tilt-r { transform: rotate(1deg); }
 
@@ -145,6 +159,7 @@ body {
   border-radius: 50%; background: var(--pin-red);
   box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.25), 0 2px 2px rgba(0, 0, 0, 0.3);
 }
+.pin--md { width: 16px; height: 16px; margin-left: -8px; top: -7px; }
 .pin--lg { width: 22px; height: 22px; margin-left: -11px; top: -8px; }
 
 .tape {
@@ -261,11 +276,45 @@ body {
   font-family: var(--font-chalk); font-size: 21px; font-weight: 700; cursor: pointer;
 }
 
+/* 和 .btn-tag 同高的 .btn-board（頁首的主要按鈕，例如「下載紀錄」） */
+.btn-board--sm {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 44px; padding: 0 18px;
+  font-family: var(--font-body); font-size: 16px;
+}
+
 .btn-line {
   display: inline-flex; align-items: center; gap: 10px;
   height: 52px; padding: 0 26px; border-radius: 999px;
   background: var(--line-green); color: #fff; text-decoration: none;
   font-size: 18px; font-weight: 700; box-shadow: 0 3px 0 #03632e;
+}
+
+/* ---------- 標題牌、徽章 ---------- */
+/* 釘在布告欄上的小黑板，當區塊標題（例如「金幣榜」）；放兩個 .pin.pin--md 當左右的圖釘 */
+.board-sign {
+  position: relative;
+  padding: 8px 44px;
+  background: var(--board);
+  color: var(--chalk);
+  border: 5px solid var(--wood);
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(60, 35, 10, 0.35);
+  font-family: var(--font-chalk); font-size: 30px; font-weight: 700;
+  letter-spacing: 0.3em;
+  transform: rotate(-1deg);
+}
+.board-sign .pin { top: -12px; margin-left: 0; }
+.board-sign .pin:first-child { left: 18px; }
+.board-sign .pin:nth-child(2) { left: auto; right: 18px; }
+
+/* 綠色小徽章（今天加的分數） */
+.badge-green {
+  padding: 2px 8px;
+  background: var(--badge-green);
+  color: var(--badge-green-ink);
+  border-radius: 999px;
+  font-size: 15px; font-weight: 700;
 }
 
 /* ---------- 焦點樣式（鍵盤操作） ---------- */
