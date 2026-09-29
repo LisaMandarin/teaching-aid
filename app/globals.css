@@ -47,6 +47,8 @@ body {
   padding: 12px;
   transition: width 0.2s ease;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar.is-open {
@@ -77,8 +79,37 @@ body {
 }
 
 .sidebar nav {
-  max-height: calc(100% - 32px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+}
+
+/* LINE QR code pinned to the bottom of the sidebar. */
+.sidebar-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sidebar-line:hover {
+  background: var(--bg);
+}
+
+.sidebar-line img {
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.sidebar-line small {
+  color: var(--muted);
 }
 
 .sidebar ul {
@@ -1870,4 +1901,78 @@ label.btn {
   90% {
     transform: translate(8px, -4px);
   }
+}
+
+/* ---------- Welcome dialog ---------- */
+.welcome {
+  width: min(440px, calc(100vw - 32px));
+  padding: 28px;
+  border: none;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  line-height: 1.7;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.welcome::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.welcome h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+
+.welcome p {
+  margin: 0 0 8px;
+}
+
+.welcome-line {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.line-button {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #06c755;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.line-button:hover {
+  background: #05b04b;
+}
+
+.welcome-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.welcome-footer label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.welcome-footer button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
 }
