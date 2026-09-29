@@ -1,12 +1,12 @@
 # teaching-aid
 
-讓語言老師用遊戲來教學的網站。
+**教學便利通**：讓語言老師用遊戲來教學的網站。
 
 A website that helps language teachers teach through games.
 
 ## 功能
 
-使用 Next.js（App Router）。左邊側欄分成遊戲、教材、工具三區；上課時可以在各頁之間切換，遊戲進度不會中斷。
+使用 Next.js（App Router）。左邊側欄是軟木布告欄，分成遊戲、教材、工具三區；上課時可以在各頁之間切換，遊戲進度不會中斷。
 
 ### 遊戲
 
@@ -20,8 +20,8 @@ A website that helps language teachers teach through games.
 
 ### 工具
 
-- **我的獎勵**：上傳學生名單 Excel（學生、金幣），每位學生一個寶箱，點一下掉進一枚金幣；下課後下載紀錄到電腦，下次再上傳接著累積。
-- **抽籤筒**：上傳學生名單 Excel（「學生」欄，或 A 欄不加標題；我的獎勵的檔案也能用），每位學生一支籤。抽籤時籤筒搖晃，抽中的籤升起落在籤筒前面再揭曉名字。可選「抽過的不再抽」，點名字可標成缺席；進度存在瀏覽器裡。
+- **我的獎勵**：上傳學生名單 Excel（學生、金幣），每位學生一張釘在「金幣榜」布告欄上的紙卡，點卡片就有一枚金幣掉進寶箱，今天加的分數顯示在綠色徽章上（按錯可以按卡片右上角的「−1」收回）；下課後下載紀錄到電腦，下次再上傳接著累積。
+- **抽籤筒**：上傳學生名單 Excel（「學生」欄，或 A 欄不加標題；我的獎勵的檔案也能用），每位學生一支籤。抽籤時籤筒搖晃，抽中的籤升起落在籤筒前面，再用黃色粉筆在黑板上寫出名字和「第 N 位」。右邊的名單是筆記紙：抽過的人標黃並蓋上「第 N 位」印章；可選「抽過的不再抽」，點名字可標成缺席（名字劃掉）；進度存在瀏覽器裡。
 - **圖片瘦身**：把圖片縮到最長邊 600 像素、每張約 200 KB 以下（檔名和格式不變），方便放上 Dropbox 給遊戲使用。
 
 每個需要 Excel 的地方都有範本可下載；範本裡需要選擇的欄位都是下拉選單。
@@ -32,6 +32,15 @@ A website that helps language teachers teach through games.
 npm install
 npm run dev   # http://localhost:3000
 ```
+
+## 外觀（學校主題）
+
+整個網站是「黑板／粉筆／布告欄」的學校主題：遊戲畫在黑板上，側欄、上傳區和獎勵榜是軟木布告欄，面板是釘著或貼著的紙。
+
+- 規格在 `school-theme.css`（`app/globals.css` 開頭 import）：顏色、字型都是 CSS 變數，元件是現成的 class，例如 `.chalkboard`、`.chalk-tray`、`.cork`、`.paper`、`.pin`、`.tape`、`.btn-chalk`、`.btn-tag`、`.btn-board`、`.stamp`。新的樣式先找這裡有沒有可用的，缺少的補進這支檔案，不要寫死色碼。
+- 字型：`--font-chalk`（霞鶩文楷，標題、黑板上的字、按鈕）和 `--font-body`（Noto Sans TC，一般文字），在 `app/layout.tsx` 用 `next/font/google` 載入。
+- 共用元件：`components/Chalkboard.tsx`（黑板加粉筆槽）、`components/DropZone.tsx`（布告欄上的上傳區）、`components/Icons.tsx`（按鈕用的線條圖示）。
+- **題目字型不跟著主題**：題目文字（圈圈叉叉的格子、禮物盒封面）一律用字型選單選到的字型；「繁體」「簡體」用系統字型（`--font-board-text`），不會被黑板的 `--font-chalk` 蓋掉。
 
 ## 字型與破音字
 
