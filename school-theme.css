@@ -54,6 +54,22 @@
   --chest-wood: #b5642a;
   --chest-inside: #5a3010;
 
+  /* 籤筒（抽籤筒） */
+  --cup: #d8544a;
+  --cup-dark: #c8423a;
+  --cup-rim-shadow: #a8372f;
+  --stick-wood: #e8cf9a;
+  --stick-wood-light: #f3dfae; /* 抽出來的那一支 */
+  --stick-edge: #c9a86a;
+  --stick-ink: #5a3010;
+
+  /* 筆記紙上的記號（抽籤名單） */
+  --paper-rule: rgba(110, 150, 200, 0.3);   /* 每一行底下的藍線 */
+  --paper-margin: rgba(214, 90, 80, 0.5);  /* 左邊的紅色邊線 */
+  --marker-yellow: #fbe9a6;                 /* 螢光筆標記 */
+  --stamp-red: #b8322a;
+  --ink-faint: #8a8072;                     /* 劃掉的字 */
+
   /* 徽章 */
   --badge-green: #dcefd9;
   --badge-green-ink: #1f6b3a;
@@ -178,6 +194,14 @@ body {
   transform: rotate(-2deg);
 }
 
+/* 只有左邊紅線的筆記紙（抽籤名單）：每一行自己畫底線，用 var(--paper-rule) */
+.margin-paper {
+  background-color: var(--paper);
+  background-image: linear-gradient(90deg, transparent 32px, var(--paper-margin) 32px, var(--paper-margin) 34px, transparent 34px);
+  border-radius: 2px;
+  box-shadow: 0 6px 14px rgba(60, 35, 10, 0.25);
+}
+
 /* 橫線筆記紙（歡迎彈窗） */
 .lined-paper {
   background-color: var(--paper);
@@ -220,6 +244,12 @@ body {
   box-shadow: 0 2px 0 var(--paper-shadow);
   font-family: var(--font-body); font-size: 16px; color: var(--ink);
   cursor: pointer;
+}
+/* 小一號、沒有底色的紙標籤按鈕（紙面上的次要按鈕，例如名單的「重新開始」） */
+.btn-tag--sm {
+  gap: 6px; height: 40px; padding: 0 12px;
+  background: transparent; box-shadow: none;
+  border-radius: 8px; font-size: 14px;
 }
 .select-tag {
   height: 44px; padding: 0 12px;
@@ -316,6 +346,19 @@ body {
   border-radius: 999px;
   font-size: 15px; font-weight: 700;
 }
+
+/* 蓋在紙上的圓角印章（「第 N 位」）；.stamp--muted 是灰色的（「缺席」） */
+.stamp {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  color: var(--stamp-red);
+  font-family: var(--font-body); font-size: 12px; font-weight: 700;
+  text-decoration: none;
+  transform: rotate(-4deg);
+}
+.stamp--muted { color: var(--ink-soft); }
 
 /* ---------- 焦點樣式（鍵盤操作） ---------- */
 :where(button, a, select, input):focus-visible {
