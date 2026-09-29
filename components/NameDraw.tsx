@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DropZone from "./DropZone";
 import { downloadNamesTemplate, parseNames } from "@/lib/draw";
 import { playDing, playRattle } from "@/lib/sounds";
 
@@ -176,7 +177,7 @@ export default function NameDraw() {
   };
 
   const picker = (
-    <label className="btn">
+    <label className="btn-tag">
       📂 換一個名單
       <input
         type="file"
@@ -193,7 +194,7 @@ export default function NameDraw() {
 
   return (
     <div
-      className={`draw ${dragging ? "is-dragging" : ""}`}
+      className={`game draw ${dragging ? "is-dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -207,12 +208,12 @@ export default function NameDraw() {
         void open(e.dataTransfer.files[0]);
       }}
     >
-      <div className="materials-toolbar">
-        <h1 className="materials-title">抽籤筒</h1>
+      <header className="page-header">
+        <h1 className="page-title">抽籤筒</h1>
         {list && (
-          <>
+          <div className="page-tools">
             <button
-              className="mute-btn"
+              className="btn-tag mute-btn"
               onClick={() => setMuted((m) => !m)}
               aria-pressed={muted}
               title={muted ? "開啟音效" : "靜音"}
@@ -220,9 +221,9 @@ export default function NameDraw() {
               {muted ? "🔇 靜音中" : "🔊 音效開"}
             </button>
             {picker}
-          </>
+          </div>
         )}
-      </div>
+      </header>
 
       {error && (
         <div className="ttt-notice is-warn">
@@ -245,8 +246,7 @@ export default function NameDraw() {
 
       {!loaded ? null : !list ? (
         <>
-          <label className="materials-drop">
-            <span className="materials-drop-icon">🎋</span>
+          <DropZone icon="🎋">
             <strong>點這裡選擇學生名單的 Excel 檔，或把檔案拖進來</strong>
             <span className="materials-drop-hint">第一欄「學生」，從第二列開始每列一位學生（「我的獎勵」的檔案也可以用）</span>
             <input
@@ -258,14 +258,14 @@ export default function NameDraw() {
                 e.target.value = "";
               }}
             />
-          </label>
-          <button className="btn rewards-template" onClick={() => void downloadNamesTemplate()}>
+          </DropZone>
+          <button className="btn-tag rewards-template" onClick={() => void downloadNamesTemplate()}>
             ⬇️ 下載 Excel 範本
           </button>
         </>
       ) : (
         <div className="draw-body">
-          <section className="draw-stage">
+          <section className="draw-stage paper">
             <div className={`draw-result ${shaking ? "is-flicker" : ""}`} aria-live="polite">
               {shaking ? (
                 flicker
@@ -303,7 +303,7 @@ export default function NameDraw() {
             <p className="rewards-hint">籤筒裡還有 {pool.length} 支籤</p>
           </section>
 
-          <aside className="draw-list">
+          <aside className="draw-list paper">
             <div className="draw-list-head">
               <strong>名單（{list.names.length} 人）</strong>
               <button className="btn draw-restart" onClick={restart} disabled={list.history.length === 0 || shaking}>

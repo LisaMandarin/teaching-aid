@@ -2,6 +2,7 @@
 
 import { zipSync, type Zippable } from "fflate";
 import { useEffect, useState } from "react";
+import DropZone from "./DropZone";
 import { canShrink, shrinkImage, type Shrunk } from "@/lib/images";
 
 // A game board cell is at most ~180px wide; 600px stays sharp on projectors and Retina screens.
@@ -138,7 +139,7 @@ export default function ImageResizer() {
 
   return (
     <div
-      className={`resizer ${dragging ? "is-dragging" : ""}`}
+      className={`game resizer ${dragging ? "is-dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -152,34 +153,36 @@ export default function ImageResizer() {
         void fromDrop(e.dataTransfer).then(add);
       }}
     >
-      <div className="materials-toolbar">
-        <h1 className="materials-title">圖片瘦身</h1>
-        <label className="btn">
-          🖼️ 選擇圖片
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={(e) => {
-              void add(fromInput(e.target.files));
-              e.target.value = "";
-            }}
-          />
-        </label>
-        <label className="btn">
-          📁 選擇資料夾
-          <input
-            type="file"
-            hidden
-            {...{ webkitdirectory: "" }}
-            onChange={(e) => {
-              void add(fromInput(e.target.files));
-              e.target.value = "";
-            }}
-          />
-        </label>
-      </div>
+      <header className="page-header">
+        <h1 className="page-title">圖片瘦身</h1>
+        <div className="page-tools">
+          <label className="btn-tag">
+            🖼️ 選擇圖片
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                void add(fromInput(e.target.files));
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <label className="btn-tag">
+            📁 選擇資料夾
+            <input
+              type="file"
+              hidden
+              {...{ webkitdirectory: "" }}
+              onChange={(e) => {
+                void add(fromInput(e.target.files));
+                e.target.value = "";
+              }}
+            />
+          </label>
+        </div>
+      </header>
 
       <ul className="resizer-intro">
         <li>
@@ -207,8 +210,7 @@ export default function ImageResizer() {
       )}
 
       {items.length === 0 ? (
-        <label className="materials-drop">
-          <span className="materials-drop-icon">🪶</span>
+        <DropZone icon="🪶">
           <strong>點這裡選擇圖片，或把圖片、資料夾拖進來</strong>
           <span className="materials-drop-hint">可以一次選很多張</span>
           <input
@@ -221,10 +223,10 @@ export default function ImageResizer() {
               e.target.value = "";
             }}
           />
-        </label>
+        </DropZone>
       ) : (
         <>
-          <ul className="resizer-list">
+          <ul className="resizer-list paper">
             {items.map((it) => (
               <li key={it.id} className="resizer-row">
                 <Thumb blob={output(it)} />

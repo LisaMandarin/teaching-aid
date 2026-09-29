@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DropZone from "./DropZone";
 import { downloadRoster, downloadRosterTemplate, parseRoster, type Roster } from "@/lib/rewards";
 import { playCoin, preloadCoinSound } from "@/lib/sounds";
 
@@ -109,7 +110,7 @@ export default function Rewards() {
     if (!muted) playCoin();
   };
 
-  const picker = (label: string, className = "btn") => (
+  const picker = (label: string, className = "btn-tag") => (
     <label className={className}>
       {label}
       <input
@@ -126,7 +127,7 @@ export default function Rewards() {
 
   return (
     <div
-      className={`rewards ${dragging ? "is-dragging" : ""}`}
+      className={`game rewards ${dragging ? "is-dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -140,12 +141,12 @@ export default function Rewards() {
         void open(e.dataTransfer.files[0]);
       }}
     >
-      <div className="materials-toolbar">
-        <h1 className="materials-title">我的獎勵</h1>
+      <header className="page-header">
+        <h1 className="page-title">我的獎勵</h1>
         {roster && (
-          <>
+          <div className="page-tools">
             <button
-              className="mute-btn"
+              className="btn-tag mute-btn"
               onClick={() => setMuted((m) => !m)}
               aria-pressed={muted}
               title={muted ? "開啟音效" : "靜音"}
@@ -153,12 +154,12 @@ export default function Rewards() {
               {muted ? "🔇 靜音中" : "🔊 音效開"}
             </button>
             {picker("📂 換一個檔案")}
-            <button className="btn btn-primary" onClick={() => void downloadRoster(roster)}>
+            <button className="btn-tag" onClick={() => void downloadRoster(roster)}>
               ⬇️ 下載紀錄
             </button>
-          </>
+          </div>
         )}
-      </div>
+      </header>
 
       {error && (
         <div className="ttt-notice is-warn">
@@ -181,8 +182,7 @@ export default function Rewards() {
 
       {!loaded ? null : !roster ? (
         <>
-          <label className="materials-drop">
-            <span className="materials-drop-icon">🪙</span>
+          <DropZone icon="🪙">
             <strong>點這裡選擇學生名單的 Excel 檔，或把檔案拖進來</strong>
             <span className="materials-drop-hint">第一欄「學生」，第二欄「金幣」（目前累積的金幣數）</span>
             <input
@@ -194,8 +194,8 @@ export default function Rewards() {
                 e.target.value = "";
               }}
             />
-          </label>
-          <button className="btn rewards-template" onClick={() => void downloadRosterTemplate()}>
+          </DropZone>
+          <button className="btn-tag rewards-template" onClick={() => void downloadRosterTemplate()}>
             ⬇️ 下載 Excel 範本
           </button>
         </>
@@ -206,7 +206,8 @@ export default function Rewards() {
           </p>
           <ul className="rewards-grid">
             {roster.students.map((s, row) => (
-              <li key={row} className="rewards-card">
+              <li key={row} className="rewards-card paper">
+                <span className="pin" aria-hidden="true" />
                 <span className="rewards-name" title={s.name}>
                   {s.name}
                 </span>

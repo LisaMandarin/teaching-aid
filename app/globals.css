@@ -1163,9 +1163,6 @@ label.btn {
   margin: 0;
   padding: 0;
   list-style: none;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
 }
 
 .resizer-row {
@@ -1286,10 +1283,16 @@ label.btn {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 12px 12px 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  padding: 14px 12px;
+}
+
+/* Each student's card is pinned up; tilt every other one a little, like .nav-card. */
+.rewards-card:nth-child(odd) {
+  transform: rotate(0.6deg);
+}
+
+.rewards-card:nth-child(even) {
+  transform: rotate(-0.6deg);
 }
 
 .rewards-name {
@@ -1455,9 +1458,6 @@ label.btn {
   flex: 1;
   min-width: 0;
   padding: 24px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
 }
 
 .draw-result {
@@ -1558,9 +1558,6 @@ label.btn {
   width: 260px;
   flex-shrink: 0;
   padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
   overflow-y: auto;
 }
 
