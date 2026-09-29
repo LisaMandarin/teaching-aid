@@ -1,3 +1,5 @@
+@import "../school-theme.css";
+
 /* 字嗨注音而已 (ButTaiwan/bpmfvs): shows only the 注音 of each character. See public/fonts for its license. */
 @font-face {
   font-family: "TeachingAid Zhuyin Only";
@@ -6,12 +8,16 @@
 }
 
 :root {
-  --bg: #f7f5f0;
-  --panel: #ffffff;
-  --ink: #1f2328;
-  --muted: #6b7280;
-  --line: #e5e1d8;
-  --accent: #2563eb;
+  /* The theme fonts, loaded with next/font in app/layout.tsx. */
+  --font-chalk: var(--font-wenkai), "Kaiti TC", serif;
+  --font-body: var(--font-noto-tc), system-ui, sans-serif;
+
+  /* Older names, pointed at the school theme's colors. */
+  --bg: var(--wall);
+  --panel: var(--paper);
+  --muted: var(--ink-soft);
+  --line: var(--paper-border);
+  --accent: var(--board);
   --danger: #dc2626;
   --success: #16a34a;
   --team-0: #2563eb;
@@ -28,11 +34,6 @@ body {
   height: 100%;
 }
 
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
-}
 
 /* ---------- Layout ---------- */
 .shell {
