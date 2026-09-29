@@ -20,8 +20,12 @@
   --accent: var(--board);
   --danger: #dc2626;
   --success: #16a34a;
-  --team-0: #2563eb;
-  --team-1: #ea580c;
+  /* 圈圈叉叉 teams, in chalk on the board. */
+  --team-0: var(--chalk-blue);
+  --team-1: var(--chalk-orange);
+
+  /* Board text in the 繁體／簡體 fonts: the system font, as before the theme, not the chalk font. */
+  --font-board-text: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
 }
 
 * {
@@ -470,35 +474,39 @@ label.btn-tag {
 }
 
 /* ---------- Tic-Tac-Toe ---------- */
-.ttt {
+.tag-field {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  width: 100%;
+  gap: 6px;
+  font-size: 15px;
+  color: var(--ink-soft);
 }
 
-.ttt-teams {
-  display: flex;
+/* O team | grid | X team */
+.ttt-arena {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+  align-items: center;
   gap: 24px;
-  flex-wrap: wrap;
-  justify-content: center;
+  width: 100%;
 }
 
 .ttt-team {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px 6px 6px;
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 999px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 12px 8px;
+  border: 2px dashed transparent;
+  border-radius: var(--radius);
+  opacity: 0.6;
+  transition: opacity 0.15s, border-color 0.15s;
 }
 
+/* The team whose turn it is: circled in its own chalk color. */
 .ttt-team.is-turn {
   border-color: var(--team-color);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--team-color) 20%, transparent);
+  opacity: 1;
 }
 
 .team-0 {
@@ -520,14 +528,16 @@ label.btn-tag {
 }
 
 .ttt-team-symbol {
-  width: 40px;
-  height: 40px;
-  border: none;
+  width: 88px;
+  height: 88px;
+  border: 4px solid var(--team-color);
   border-radius: 50%;
-  background: var(--team-color);
-  color: #fff;
-  font-size: 22px;
-  font-weight: 800;
+  background: transparent;
+  color: var(--team-color);
+  font-family: var(--font-chalk);
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 }
 
@@ -536,24 +546,30 @@ label.btn-tag {
 }
 
 .ttt-team-name {
-  width: 160px;
+  width: 100%;
+  max-width: 180px;
+  color: var(--team-color);
 }
 
 .ttt-status {
-  font-size: 24px;
-  color: var(--ink);
+  font-size: 26px;
+}
+
+.ttt-status.is-won {
+  font-size: 32px;
+  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .ttt-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 10px;
-  /* Sized by height so the whole game fits the viewport. */
-  width: min(58vh, 560px, 100%);
+  /* Sized by height so the whole game fits the viewport (a % width would collapse in the arena's auto column). */
+  width: min(56vh, 540px, 50vw);
   aspect-ratio: 1;
 }
 
+/* No boxes: the grid is the # drawn in chalk between the cells. */
 .ttt-cell {
   position: relative;
   container-type: size;
@@ -563,21 +579,27 @@ label.btn-tag {
   min-width: 0;
   padding: 8%;
   font: inherit;
-  color: var(--ink);
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 14px;
+  color: var(--chalk);
+  background: transparent;
+  border: 0 solid var(--chalk);
   overflow: hidden;
+}
+
+.ttt-cell:not(:nth-child(3n)) {
+  border-right-width: 5px;
+}
+
+.ttt-cell:nth-child(-n + 6) {
+  border-bottom-width: 5px;
 }
 
 button.ttt-cell {
   cursor: pointer;
-  transition: transform 0.1s, border-color 0.15s;
+  transition: background-color 0.15s;
 }
 
 button.ttt-cell:not(:disabled):hover {
-  border-color: var(--accent);
-  transform: scale(1.03);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 button.ttt-cell:disabled {
@@ -608,6 +630,8 @@ button.ttt-cell:disabled {
 
 .ttt-text {
   line-height: 1.1;
+  /* The chalkboard writes in the chalk font; the question text keeps the teacher's font instead. */
+  font-family: var(--font-board-text);
   font-weight: 700;
   text-align: center;
   overflow-wrap: anywhere;
@@ -637,8 +661,7 @@ button.ttt-cell:disabled {
 }
 
 .ttt-cell.is-win {
-  border-color: var(--team-color);
-  background: color-mix(in srgb, var(--team-color) 12%, var(--panel));
+  background: color-mix(in srgb, var(--team-color) 22%, transparent);
 }
 
 .ttt-mark {
@@ -646,6 +669,7 @@ button.ttt-cell:disabled {
   inset: 6%;
   fill: none;
   stroke: var(--team-color);
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.2));
   stroke-width: 11;
   stroke-linecap: round;
   pointer-events: none;
@@ -662,7 +686,6 @@ button.ttt-cell:disabled {
   justify-content: center;
   gap: 3%;
   padding: 5%;
-  border-style: dashed;
 }
 
 /* Without an image the text box fills the cell, so the text sits in the middle like in play. */
@@ -673,12 +696,13 @@ button.ttt-cell:disabled {
   width: 100%;
   padding: 4px;
   font: inherit;
+  font-family: var(--font-board-text);
   font-size: 16cqmin;
   font-weight: 700;
   text-align: center;
-  color: var(--ink);
-  background: var(--bg);
-  border: 1px solid var(--line);
+  color: var(--chalk);
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px dashed var(--chalk-dim);
   border-radius: 8px;
 }
 
@@ -712,8 +736,12 @@ button.ttt-cell:disabled {
 
 .ttt-input:focus {
   outline: none;
-  border-color: var(--accent);
-  background: var(--panel);
+  border: 2px solid var(--chalk);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ttt-input::placeholder {
+  color: var(--chalk-dim);
 }
 
 .ttt-thumb {
@@ -750,19 +778,15 @@ button.ttt-cell:disabled {
 
 .ttt-upload {
   flex-shrink: 0;
+  font-family: var(--font-body);
   font-size: 13px;
-  color: var(--accent);
+  color: var(--chalk-yellow);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .ttt-upload:hover {
   text-decoration: underline;
-}
-
-.ttt-status.is-won {
-  font-size: 32px;
-  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes pop {
@@ -883,11 +907,16 @@ label.btn {
   color: var(--muted);
 }
 
-.ttt-options {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 20px;
+.ttt-cell .ttt-img-missing {
+  color: var(--chalk-orange);
+}
+
+.ttt-cell .ttt-img-missing small {
+  color: var(--chalk-dim);
+}
+
+.game > .ttt-notice {
+  align-self: center;
 }
 
 

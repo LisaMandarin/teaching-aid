@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
+import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
 import { playCheer, playWriting, preloadMarkSounds, setMuted } from "@/lib/sounds";
 import {
@@ -246,56 +247,78 @@ export default function TicTacToe() {
   else if (full) status = "平手！";
   else status = <>輪到 <span className={`team-text-${turn}`}>{names[turn] || SYMBOLS[turn]}（{SYMBOLS[turn]}）</span></>;
 
-  return (
-    <div className="ttt">
-      {winner && celebration && <Confetti key={celebration.id} accent={celebration.color} />}
-      <div className="hangman-header">
-        <h1 className="hangman-title">圈圈叉叉</h1>
-        <button
-          className="mute-btn"
-          onClick={() => setMutedState((m) => !m)}
-          aria-pressed={muted}
-          title={muted ? "開啟音效" : "靜音"}
-        >
-          {muted ? "🔇 靜音中" : "🔊 音效開"}
-        </button>
-        <button className={`mute-btn ${editing ? "is-on" : ""}`} onClick={() => setEditing((e) => !e)} aria-pressed={editing}>
-          {editing ? "✅ 完成編輯" : "✏️ 編輯題目"}
-        </button>
-      </div>
+  // A team's side of the board, next to the grid: its mark and its name.
+  const team = (t: Team) => (
+    <div className={`ttt-team team-${t} ${!over && turn === t ? "is-turn" : ""}`}>
+      <button
+        className="ttt-team-symbol"
+        onClick={() => !over && setTurn(t)}
+        disabled={over}
+        title="換成這一隊"
+      >
+        {SYMBOLS[t]}
+      </button>
+      <input
+        className="board-label ttt-team-name"
+        value={names[t]}
+        onChange={(e) => setName(t, e.target.value)}
+        placeholder="輸入隊名"
+        aria-label={`${SYMBOLS[t]} 隊隊名`}
+        maxLength={20}
+      />
+    </div>
+  );
 
-      <div className="ttt-options">
-        {lessons.length > 0 && (
-          <label className="ttt-lesson">
-            題目：
-            <select
-              value={lessonIndex ?? ""}
-              onChange={(e) => chooseLesson(e.target.value === "" ? null : Number(e.target.value))}
-            >
-              {lessons.map((l, i) => (
-                <option key={i} value={i}>
-                  {l.name}（{l.items.length} 題）
+  return (
+    <div className="game ttt">
+      {winner && celebration && <Confetti key={celebration.id} accent={celebration.color} />}
+      <header className="page-header">
+        <h1 className="page-title">圈圈叉叉</h1>
+        <div className="page-tools">
+          {lessons.length > 0 && (
+            <label className="tag-field">
+              題目
+              <select
+                className="select-tag"
+                value={lessonIndex ?? ""}
+                onChange={(e) => chooseLesson(e.target.value === "" ? null : Number(e.target.value))}
+              >
+                {lessons.map((l, i) => (
+                  <option key={i} value={i}>
+                    {l.name}（{l.items.length} 題）
+                  </option>
+                ))}
+                <option value="">自訂（手動編輯）</option>
+              </select>
+            </label>
+          )}
+          <label className="tag-field">
+            字型
+            <select className="select-tag" value={font} onChange={(e) => isFontId(e.target.value) && setFont(e.target.value)}>
+              {FONTS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
                 </option>
               ))}
-              <option value="">自訂（手動編輯）</option>
             </select>
           </label>
-        )}
-        <label className="ttt-lesson">
-          字型：
-          <select value={font} onChange={(e) => isFontId(e.target.value) && setFont(e.target.value)}>
-            {FONTS.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+          <button
+            className="btn-tag mute-btn"
+            onClick={() => setMutedState((m) => !m)}
+            aria-pressed={muted}
+            title={muted ? "開啟音效" : "靜音"}
+          >
+            {muted ? "🔇 靜音中" : "🔊 音效開"}
+          </button>
+          <button className={`btn-tag ${editing ? "is-on" : ""}`} onClick={() => setEditing((e) => !e)} aria-pressed={editing}>
+            {editing ? "✅ 完成編輯" : "✏️ 編輯題目"}
+          </button>
+        </div>
+      </header>
 
       {editing && (
         <div className="ttt-import">
-          <label className={`btn ${importing ? "is-busy" : ""}`}>
+          <label className={`btn-tag ${importing ? "is-busy" : ""}`}>
             📥 匯入 Excel
             <input
               type="file"
@@ -308,7 +331,7 @@ export default function TicTacToe() {
               }}
             />
           </label>
-          <button className="btn" onClick={() => void downloadTemplate()}>
+          <button className="btn-tag" onClick={() => void downloadTemplate()}>
             📄 下載範本
           </button>
         </div>
@@ -368,120 +391,103 @@ export default function TicTacToe() {
         </div>
       )}
 
-      <div className="ttt-teams">
-        {([0, 1] as const).map((t) => (
-          <div key={t} className={`ttt-team team-${t} ${!over && turn === t ? "is-turn" : ""}`}>
-            <button
-              className="ttt-team-symbol"
-              onClick={() => !over && setTurn(t)}
-              disabled={over}
-              title="換成這一隊"
-            >
-              {SYMBOLS[t]}
-            </button>
-            <input
-              className="board-label ttt-team-name"
-              value={names[t]}
-              onChange={(e) => setName(t, e.target.value)}
-              placeholder="輸入隊名"
-              aria-label={`${SYMBOLS[t]} 隊隊名`}
-              maxLength={20}
-            />
-          </div>
-        ))}
-      </div>
+      <Chalkboard className="ttt-board">
+        <p className={`status ttt-status ${winner ? "is-won" : ""}`}>{status}</p>
 
-      <p className={`status ttt-status ${winner ? "is-won" : ""}`}>{status}</p>
-
-      <div
-        className={`ttt-grid ${cellFont ? "has-cell-font" : ""}`}
-        data-font={font}
-        style={cellFont ? ({ "--cell-font": `${cellFont}, sans-serif` } as React.CSSProperties) : undefined}
-      >
-        {cells.map((cell, i) =>
-          editing ? (
-            <div key={i} className={`ttt-cell is-editing ${cell.image ? "has-image" : ""}`}>
-              {cell.image && (
-                <div className="ttt-thumb">
-                  <CellImage key={cell.image} cell={cell} />
-                  <button className="ttt-thumb-remove" onClick={() => updateCell(i, { image: null, imageName: undefined })} aria-label="移除圖片">
-                    ×
-                  </button>
+        <div className="ttt-arena">
+          {team(0)}
+          <div
+            className={`ttt-grid ${cellFont ? "has-cell-font" : ""}`}
+            data-font={font}
+            style={cellFont ? ({ "--cell-font": `${cellFont}, sans-serif` } as React.CSSProperties) : undefined}
+          >
+            {cells.map((cell, i) =>
+              editing ? (
+                <div key={i} className={`ttt-cell is-editing ${cell.image ? "has-image" : ""}`}>
+                  {cell.image && (
+                    <div className="ttt-thumb">
+                      <CellImage key={cell.image} cell={cell} />
+                      <button className="ttt-thumb-remove" onClick={() => updateCell(i, { image: null, imageName: undefined })} aria-label="移除圖片">
+                        ×
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    className={`ttt-input ${textSize(cell.text, !!cell.image)}`}
+                    value={cell.text}
+                    onChange={(e) => updateCell(i, { text: e.target.value })}
+                    onPaste={(e) => {
+                      const file = [...e.clipboardData.files].find((f) => f.type.startsWith("image/"));
+                      if (file) {
+                        e.preventDefault();
+                        void setImage(i, file);
+                      }
+                    }}
+                    placeholder="注音／國字"
+                    aria-label={`第 ${i + 1} 格內容`}
+                  />
+                  <label className="ttt-upload">
+                    🖼 {cell.image ? "換圖片" : "加圖片"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        void setImage(i, e.target.files?.[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                 </div>
-              )}
-              <input
-                className={`ttt-input ${textSize(cell.text, !!cell.image)}`}
-                value={cell.text}
-                onChange={(e) => updateCell(i, { text: e.target.value })}
-                onPaste={(e) => {
-                  const file = [...e.clipboardData.files].find((f) => f.type.startsWith("image/"));
-                  if (file) {
-                    e.preventDefault();
-                    void setImage(i, file);
-                  }
-                }}
-                placeholder="注音／國字"
-                aria-label={`第 ${i + 1} 格內容`}
-              />
-              <label className="ttt-upload">
-                🖼 {cell.image ? "換圖片" : "加圖片"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={(e) => {
-                    void setImage(i, e.target.files?.[0]);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-          ) : (
-            <button
-              key={i}
-              className={`ttt-cell ${marks[i] !== null ? "is-marked" : ""} ${winner?.line.includes(i) ? `is-win team-${winner.team}` : ""}`}
-              onClick={() => place(i)}
-              disabled={over || marks[i] !== null}
-              aria-label={`${cell.text || `第 ${i + 1} 格`}${marks[i] !== null ? `（${SYMBOLS[marks[i]]}）` : ""}`}
-            >
-              <span className="ttt-content">
-                {cell.image && <CellImage key={cell.image} cell={cell} />}
-                {cell.text && (
-                  <span className={`ttt-text ${textSize(cell.text, !!cell.image)}`}>
-                    <BoardText text={cell.text} font={font} hanzi={hanzi} />
+              ) : (
+                <button
+                  key={i}
+                  className={`ttt-cell ${marks[i] !== null ? "is-marked" : ""} ${winner?.line.includes(i) ? `is-win team-${winner.team}` : ""}`}
+                  onClick={() => place(i)}
+                  disabled={over || marks[i] !== null}
+                  aria-label={`${cell.text || `第 ${i + 1} 格`}${marks[i] !== null ? `（${SYMBOLS[marks[i]]}）` : ""}`}
+                >
+                  <span className="ttt-content">
+                    {cell.image && <CellImage key={cell.image} cell={cell} />}
+                    {cell.text && (
+                      <span className={`ttt-text ${textSize(cell.text, !!cell.image)}`}>
+                        <BoardText text={cell.text} font={font} hanzi={hanzi} />
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-              {marks[i] !== null && <MarkIcon team={marks[i]} />}
-            </button>
-          ),
-        )}
-      </div>
+                  {marks[i] !== null && <MarkIcon team={marks[i]} />}
+                </button>
+              ),
+            )}
+          </div>
+          {team(1)}
+        </div>
 
-      <div className="controls">
-        {editing ? (
-          <>
-            <button className="btn" onClick={() => setCells(shuffle(cells))} disabled={moves.length > 0}>
-              🔀 打亂位置
-            </button>
-            <button className="btn" onClick={clearAll}>
-              清空全部
-            </button>
-          </>
-        ) : (
-          <>
-            <button className="btn" onClick={() => setTurn(turn === 0 ? 1 : 0)} disabled={over} title="答錯了，換另一隊">
-              答錯・換隊
-            </button>
-            <button className="btn" onClick={undo} disabled={moves.length === 0}>
-              復原
-            </button>
-            <button className="btn btn-primary" onClick={restart} disabled={moves.length === 0 && !lesson}>
-              {lesson && moves.length === 0 ? "換一組題目" : "再玩一局"}
-            </button>
-          </>
-        )}
-      </div>
+        <div className="controls">
+          {editing ? (
+            <>
+              <button className="btn-chalk-outline" onClick={() => setCells(shuffle(cells))} disabled={moves.length > 0}>
+                🔀 打亂位置
+              </button>
+              <button className="btn-chalk-ghost" onClick={clearAll}>
+                清空全部
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="btn-chalk-outline" onClick={() => setTurn(turn === 0 ? 1 : 0)} disabled={over} title="答錯了，換另一隊">
+                答錯・換隊
+              </button>
+              <button className="btn-chalk-outline" onClick={undo} disabled={moves.length === 0}>
+                復原
+              </button>
+              <button className="btn-chalk" onClick={restart} disabled={moves.length === 0 && !lesson}>
+                {lesson && moves.length === 0 ? "換一組題目" : "再玩一局"}
+              </button>
+            </>
+          )}
+        </div>
+      </Chalkboard>
     </div>
   );
 }
