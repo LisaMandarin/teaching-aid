@@ -1029,32 +1029,16 @@ label.btn {
 }
 
 /* ---------- Materials ---------- */
+/* A PDF uses the whole stage, so no max width. */
 .materials {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   flex: 1;
   min-width: 0;
-  border-radius: 12px;
-  outline: 3px dashed transparent;
-  outline-offset: 4px;
-}
-
-.materials.is-dragging {
-  outline-color: var(--accent);
-}
-
-.materials-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  max-width: none;
 }
 
 .materials-title {
   flex: 1;
   min-width: 0;
-  margin: 0;
-  font-size: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1066,9 +1050,9 @@ label.btn {
   justify-content: center;
   flex: 1;
   min-height: 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(60, 35, 10, 0.28);
   overflow: hidden;
 }
 
@@ -1084,28 +1068,47 @@ label.btn {
   object-fit: contain;
 }
 
+/* Upload: a sheet of paper pinned to a framed cork board, with the drop area marked in dashes. */
+.drop-board {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: 40px 24px;
+}
+
 .materials-drop {
+  display: flex;
+  width: min(640px, 100%);
+  padding: 28px;
+  cursor: pointer;
+  transform: rotate(-0.6deg);
+}
+
+.materials-drop-zone {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  flex: 1;
-  padding: 24px;
+  padding: 40px 24px;
   text-align: center;
   font-size: 20px;
-  background: var(--panel);
-  border: 2px dashed var(--line);
-  border-radius: 12px;
-  cursor: pointer;
+  border: 3px dashed var(--paper-border);
+  border-radius: 10px;
+  transition: border-color 0.15s, background-color 0.15s;
 }
 
-.materials-drop:hover {
-  border-color: var(--accent);
+.materials-drop:hover .materials-drop-zone,
+.is-dragging .materials-drop-zone {
+  border-color: var(--board);
+  background: color-mix(in srgb, var(--board) 6%, transparent);
 }
 
 .materials-drop.is-busy {
-  opacity: 0.5;
+  opacity: 0.6;
   pointer-events: none;
 }
 

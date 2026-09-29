@@ -36,7 +36,7 @@ export default function Materials() {
 
   return (
     <div
-      className={`materials ${dragging ? "is-dragging" : ""}`}
+      className={`game materials ${dragging ? "is-dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -61,14 +61,16 @@ export default function Materials() {
 
       {selected ? (
         <>
-          <div className="materials-toolbar">
-            <h1 className="materials-title" title={selected.name}>
+          <header className="page-header">
+            <h1 className="page-title materials-title" title={selected.name}>
               {selected.name}
             </h1>
-            <button className="btn" onClick={() => void remove()}>
-              🗑️ 刪除
-            </button>
-          </div>
+            <div className="page-tools">
+              <button className="btn-tag" onClick={() => void remove()}>
+                🗑️ 刪除
+              </button>
+            </div>
+          </header>
           <div className="materials-viewer">
             {selected.kind === "pdf" ? (
               <iframe key={selected.id} className="materials-pdf" src={selected.url} title={selected.name} />
@@ -78,25 +80,35 @@ export default function Materials() {
           </div>
         </>
       ) : (
-        <label className={`materials-drop ${busy ? "is-busy" : ""}`}>
-          <span className="materials-drop-icon">📂</span>
-          <strong>{busy ? "上傳中…" : "點這裡選擇檔案，或把檔案拖進來"}</strong>
-          <span className="materials-drop-hint">支援 PDF 與圖片，可以一次選多個</span>
-          {loaded && !persistent && (
-            <span className="materials-drop-warn">這個瀏覽器無法保存教材，重新整理後會消失。</span>
-          )}
-          <input
-            type="file"
-            accept="application/pdf,.pdf,image/*"
-            multiple
-            hidden
-            disabled={busy}
-            onChange={(e) => {
-              void upload([...(e.target.files ?? [])]);
-              e.target.value = "";
-            }}
-          />
-        </label>
+        <>
+          <header className="page-header">
+            <h1 className="page-title">上傳教材</h1>
+          </header>
+          <div className="drop-board cork cork--framed">
+            <label className={`materials-drop paper ${busy ? "is-busy" : ""}`}>
+              <span className="pin pin--lg" aria-hidden="true" />
+              <span className="materials-drop-zone">
+                <span className="materials-drop-icon">📂</span>
+                <strong>{busy ? "上傳中…" : "點這裡選擇檔案，或把檔案拖進來"}</strong>
+                <span className="materials-drop-hint">支援 PDF 與圖片，可以一次選多個</span>
+                {loaded && !persistent && (
+                  <span className="materials-drop-warn">這個瀏覽器無法保存教材，重新整理後會消失。</span>
+                )}
+              </span>
+              <input
+                type="file"
+                accept="application/pdf,.pdf,image/*"
+                multiple
+                hidden
+                disabled={busy}
+                onChange={(e) => {
+                  void upload([...(e.target.files ?? [])]);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+        </>
       )}
     </div>
   );
