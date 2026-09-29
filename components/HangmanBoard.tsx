@@ -61,17 +61,25 @@ export default function HangmanBoard({ count, onChange, label, onLabelChange, wo
       </svg>
 
       <p className={`status ${dead ? "is-dead" : ""} ${won ? "is-won" : ""}`}>
-        {dead ? "💀 死亡！" : won ? "🏆 獲勝！" : `剩下 ${MAX_STROKES - count} 筆`}
+        {dead ? (
+          "💀 死亡！"
+        ) : won ? (
+          "🏆 獲勝！"
+        ) : (
+          <>
+            剩下 <span className="chalk-yellow">{MAX_STROKES - count}</span> 筆
+          </>
+        )}
       </p>
 
       <div className="controls">
-        <button className="btn btn-primary" onClick={() => {
+        <button className="btn-chalk" onClick={() => {
           playStrokeSound(count + 1, MAX_STROKES);
           onChange(count + 1);
         }} disabled={dead || won}>
           多一筆
         </button>
-        <button className="btn" onClick={() => onChange(Math.max(0, count - 1))} disabled={count === 0}>
+        <button className="btn-chalk-outline" onClick={() => onChange(Math.max(0, count - 1))} disabled={count === 0}>
           退一筆
         </button>
       </div>

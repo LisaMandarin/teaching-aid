@@ -238,103 +238,157 @@ body {
   display: none;
 }
 
-/* ---------- Hangman ---------- */
-.hangman {
+/* ---------- Page header and chalkboard (shared by the pages) ---------- */
+.game {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 16px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.hangman-header {
+.page-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
 }
 
-.mute-btn {
-  padding: 6px 12px;
-  font-size: 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--ink);
+.page-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+label.btn-tag {
   cursor: pointer;
 }
 
+/* A header button that is switched on (設定, 編輯題目). */
+.btn-tag.is-on {
+  background: var(--sticky);
+  border-color: var(--chalk-yellow-shadow);
+}
+
+/* 靜音中 */
 .mute-btn[aria-pressed="true"] {
   color: var(--muted);
 }
 
-.hangman-title {
-  margin: 0;
-  font-size: 28px;
+.btn-tag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
+/* The chalkboard and its tray stay together. */
+.board-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.board-wrap .chalkboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.board-wrap .chalk-tray {
+  margin-top: -2px;
+}
+
+.chalk-tray .stick:nth-child(1) {
+  left: 40px;
+  width: 46px;
+  background: var(--chalk);
+}
+
+.chalk-tray .stick:nth-child(2) {
+  left: 96px;
+  width: 36px;
+  background: var(--chalk-yellow);
+}
+
+.chalk-tray .stick:nth-child(3) {
+  left: 142px;
+  width: 30px;
+  background: var(--chalk-pink);
+}
+
+/* A row across the top of the board: the mode switch on the left, 重新開始 on the right. */
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Status line written in chalk. */
+.status {
+  margin: 0;
+  font-size: 24px;
+  color: var(--chalk);
+}
+
+.status.is-dead {
+  color: var(--chalk-pink);
+  font-weight: 700;
+  font-size: 30px;
+}
+
+.status.is-won {
+  color: var(--chalk-yellow);
+  font-weight: 700;
+  font-size: 30px;
+}
+
+/* A team name written on the board; click to edit. */
+.board-label {
+  width: 220px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--chalk);
+  background: transparent;
+  border: 2px dashed transparent;
+  border-radius: 6px;
+}
+
+.board-label::placeholder {
+  color: var(--chalk-dim);
+}
+
+.board-label:hover {
+  border-color: var(--chalk-dim);
+}
+
+.board-label:focus {
+  outline: none;
+  border: 2px solid var(--chalk);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- Hangman ---------- */
 .board {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-}
-
-.board-label {
-  width: 220px;
-  padding: 4px 8px;
-  font: inherit;
-  font-size: 22px;
-  font-weight: 700;
-  text-align: center;
-  color: var(--ink);
-  background: transparent;
-  border: 1px dashed transparent;
-  border-radius: 6px;
-}
-
-.board-label:hover {
-  border-color: var(--line);
-}
-
-.board-label:focus {
-  outline: none;
-  border: 1px solid var(--accent);
-  background: var(--panel);
-}
-
-.board.is-won .gallows {
-  border-color: var(--success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
-}
-
-.status.is-won {
-  color: var(--success);
-  font-weight: 700;
-  font-size: 28px;
-}
-
-.mode-switch {
-  display: inline-flex;
-  padding: 4px;
-  gap: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-}
-
-.mode-btn {
-  padding: 8px 20px;
-  font-size: 16px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.mode-btn.is-active {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 600;
 }
 
 .pk {
@@ -346,31 +400,31 @@ body {
 }
 
 .pk .gallows {
-  height: min(48vh, 440px);
+  height: min(44vh, 420px);
 }
 
 .pk-vs {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--muted);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--chalk-dim);
 }
 
+/* The gallows is drawn straight onto the board in chalk (the SVG version of .chalk-line). */
 .gallows {
   /* Sized by height so the whole game fits the viewport. */
-  height: min(55vh, 560px);
+  height: min(50vh, 520px);
   width: auto;
   aspect-ratio: 200 / 250;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--chalk);
   stroke-width: 5;
   stroke-linecap: round;
+  opacity: 0.92;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.25));
 }
 
 .gallows.is-dead {
-  stroke: var(--danger);
+  stroke: var(--chalk-pink);
 }
 
 .stroke > * {
@@ -389,29 +443,14 @@ body {
   }
 }
 
-.status {
-  margin: 0;
-  font-size: 20px;
-  color: var(--muted);
-}
-
-.status.is-dead {
-  color: var(--danger);
-  font-weight: 700;
-  font-size: 28px;
-}
-
-.controls {
-  display: flex;
-  gap: 12px;
-}
-
+/* ---------- Buttons on paper (tools pages, notices) ---------- */
 .btn {
   padding: 10px 20px;
   font-size: 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
+  border: 1.5px solid var(--paper-border);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--paper-shadow);
   color: var(--ink);
   cursor: pointer;
 }
@@ -422,9 +461,10 @@ body {
 }
 
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--board);
+  border-color: var(--board);
+  box-shadow: 0 3px 0 #1a2a20;
+  color: var(--chalk);
   font-size: 18px;
   padding: 12px 32px;
 }
@@ -436,11 +476,6 @@ body {
   align-items: center;
   gap: 14px;
   width: 100%;
-}
-
-.mute-btn.is-on {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 .ttt-teams {
