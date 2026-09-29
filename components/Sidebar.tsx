@@ -10,8 +10,8 @@ const games = [
   { href: "/", name: "Hangman 吊人遊戲" },
   { href: "/tic-tac-toe", name: "Tic-Tac-Toe 圈圈叉叉" },
   { href: "/gifts", name: "Mystery Gift 開禮物" },
-  { href: "/read-aloud", name: "唸課文" },
-  { href: "/fill-blank", name: "填空" },
+  { href: "/read-aloud", name: "Read Aloud 唸課文" },
+  { href: "/fill-blank", name: "Fill in the Blanks 填空" },
 ];
 
 const tools = [

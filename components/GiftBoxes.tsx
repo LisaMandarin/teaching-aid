@@ -313,7 +313,7 @@ export default function GiftBoxes() {
       {lastGift?.kind === "good" && <Confetti key={result!.key} />}
 
       <header className="page-header">
-        <h1 className="page-title">開禮物</h1>
+        <h1 className="page-title">Mystery Gift 開禮物</h1>
         <div className="page-tools">
           <button className="btn-tag mute-btn" onClick={() => setMuted((m) => !m)} aria-pressed={muted} title={muted ? "開啟音效" : "靜音"}>
             {muted ? "🔇 靜音中" : "🔊 音效開"}

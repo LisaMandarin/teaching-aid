@@ -150,7 +150,7 @@ export default function ReadAloud() {
   return (
     <div className="game read">
       <header className="page-header">
-        <h1 className="page-title">唸課文</h1>
+        <h1 className="page-title">Read Aloud 唸課文</h1>
         <div className="page-tools">
           <div className="read-size" role="group" aria-label="黑板字的大小">
             <button className="btn-tag" onClick={() => setSize(SIZES[sizeIndex - 1])} disabled={sizeIndex <= 0} aria-label="字變小">
