@@ -2397,22 +2397,22 @@ label.btn {
   box-shadow: inset 0 0 0 2px var(--chalk-yellow);
 }
 
-.read-run ruby {
+.board-run ruby {
   ruby-align: center;
 }
 
-.read-run rt {
+.board-run rt {
   font-size: 0.42em;
   font-weight: 500;
   line-height: 1.2;
 }
 
-.read-run[data-font="hans-pinyin"] {
+.board-run[data-font="hans-pinyin"] {
   line-height: 2.1;
 }
 
 /* Room between syllables, so neighbouring 拼音 don't run together. */
-.read-run[data-font="hans-pinyin"] ruby {
+.board-run[data-font="hans-pinyin"] ruby {
   margin: 0 0.06em;
 }
 
@@ -2545,4 +2545,167 @@ label.btn {
   .read-panel {
     width: auto;
   }
+}
+
+/* ---------- 填空 ---------- */
+/* Laid out like 唸課文 (the .read-* rules): the board, with the word cards on a cork strip under it. */
+.fill {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+}
+
+.fill-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.fill-main > .board-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.read-panel[hidden] {
+  display: none;
+}
+
+.fill-line {
+  margin: 0;
+  padding: 0 12px;
+}
+
+.fill-line.is-blank {
+  height: 1em;
+}
+
+/* A blank: a chalk line as wide as the longest answer, so the width doesn't give it away. */
+.fill-slot {
+  display: inline-block;
+  min-width: calc(var(--slot-width) + 0.4em);
+  min-height: 1.3em;
+  margin: 0 0.15em;
+  padding: 0 0.2em;
+  border-bottom: 3px dashed var(--chalk-dim);
+  border-radius: 6px 6px 0 0;
+  text-align: center;
+  vertical-align: bottom;
+  line-height: 1.3;
+  transition: background 0.15s ease;
+}
+
+.fill-slot.is-hover {
+  background: rgba(242, 214, 117, 0.18);
+  border-bottom-color: var(--chalk-yellow);
+}
+
+.fill-slot.is-filled {
+  border-bottom-style: solid;
+  border-bottom-color: var(--chalk-yellow);
+  color: var(--chalk-yellow);
+  animation: pop 0.3s ease-out;
+}
+
+.fill-pile {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px 20px;
+  min-height: 110px;
+  padding: 20px;
+  border: 12px solid var(--wood);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 2px var(--wood-dark), inset 0 0 30px rgba(80, 45, 10, 0.35);
+}
+
+.fill-pile-empty {
+  margin: 0;
+  padding: 10px 18px;
+  font-family: var(--font-chalk);
+  font-size: 20px;
+  color: var(--ink-soft);
+}
+
+/* A word card: paper, picked up and dragged into a blank. */
+.fill-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2em;
+  padding: 0.15em 0.45em;
+  border: 1.5px solid var(--paper-border);
+  border-radius: 8px;
+  box-shadow: 0 3px 0 var(--paper-shadow), 0 6px 12px rgba(70, 45, 20, 0.2);
+  font-family: var(--font-board-text);
+  font-size: inherit;
+  line-height: 1.5;
+  color: var(--ink);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The card's place in the pile while it is being dragged. */
+.fill-card.is-lifted {
+  visibility: hidden;
+}
+
+.fill-card.is-dragging {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  cursor: grabbing;
+  rotate: -3deg;
+  scale: 1.08;
+  box-shadow: 0 16px 28px rgba(70, 45, 20, 0.35);
+}
+
+.fill-card.is-wrong {
+  animation: card-shake 0.45s ease-in-out;
+  border-color: var(--stamp-red);
+}
+
+@keyframes card-shake {
+  0%, 100% { translate: 0; }
+  20% { translate: -10px; }
+  40% { translate: 9px; }
+  60% { translate: -6px; }
+  80% { translate: 4px; }
+}
+
+.fill-blank-btn {
+  min-height: 40px;
+  padding: 6px 12px;
+  background: var(--marker-yellow);
+  border: 1.5px solid var(--chalk-yellow-shadow);
+  border-radius: 8px;
+  font: 700 15px var(--font-body);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.fill-blank-btn.is-on {
+  background: var(--paper);
+  border-color: var(--paper-border);
+}
+
+.fill-blank-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The words taken out, marked like the highlighter in Word. */
+.fill-editor [data-blank] {
+  background: var(--marker-yellow);
+  box-shadow: inset 0 -2px 0 var(--chalk-yellow-shadow);
+  border-radius: 2px;
+}
+
+.fill .board-wrap .read-board {
+  min-height: 280px;
 }

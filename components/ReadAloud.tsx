@@ -1,138 +1,21 @@
 "use client";
 
 // 唸課文: the lesson text on the chalkboard for the class to read aloud, and on the right the paper
-// the teacher types or opens the text on. Selected words can be given another font (注音, 簡體, 拼音…).
-//
-// The editor is a plain-text contentEditable: while the teacher types, the page is the source of truth
-// and is read back into runs; when a font is applied, the runs are changed and the page is redrawn.
+// the teacher types or opens the text on (see lib/runEditor.ts). Selected words can be given another font (注音, 簡體, 拼音…).
 
 import { useEffect, useRef, useState } from "react";
-import { BoardText, useHanzi } from "./CellContent";
+import { RunText, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import { FolderIcon } from "./Icons";
-import { FONTS, type FontId, fontFamilyOf, isFontId, isHans } from "@/lib/fonts";
-import {
-  type Run,
-  isRuns,
-  keepReadingsWithCharacters,
-  mergeRuns,
-  plainText,
-  readTextFile,
-  setFont,
-  toLines,
-} from "@/lib/readAloud";
-import { type ReadingProblem, applyReadings, loadPolyphones } from "@/lib/zhuyin";
+import { FONTS, type FontId, isFontId, isHans } from "@/lib/fonts";
+import { type Run, isRuns, mergeRuns, plainText, readTextFile, setFont, toLines, withReadings } from "@/lib/readAloud";
+import { drawEditor, editorFamily, fontOf, readEditor, readSelection, selectRange } from "@/lib/runEditor";
 
 const STORAGE_KEY = "read-aloud";
 const SIZES = [24, 32, 40, 48, 56, 64, 80, 96, 120];
 const DEFAULT_SIZE = 48;
 
 const SAMPLE: Run[] = [{ text: "春天來了\n花開了，草綠了，\n小鳥在樹上唱歌。", font: "bpmf-kai" }];
-
-// ---------- Reading the editor ----------
-
-type Positions = Map<Node, { enter: number; exit: number }>;
-
-const fontOf = (el: Element): FontId | null => {
-  const f = el.getAttribute("data-font");
-  return isFontId(f) ? f : null;
-};
-
-// Reads the editor into runs. Also notes where each node starts and ends in the text, to turn the selection into offsets.
-function readEditor(root: HTMLElement, base: FontId): { runs: Run[]; positions: Positions } {
-  const runs: Run[] = [];
-  const positions: Positions = new Map();
-  let length = 0;
-  const push = (text: string, font: FontId) => {
-    runs.push({ text, font });
-    length += text.length;
-  };
-  const endsWithBreak = () => runs.at(-1)?.text.endsWith("\n") ?? true;
-
-  const walk = (node: Node, font: FontId) => {
-    const enter = length;
-    if (node.nodeType === Node.TEXT_NODE) push((node as Text).data, font);
-    else if (node instanceof HTMLElement) {
-      if (node.tagName === "BR") {
-        // The browser keeps a <br> at the end of a line so an empty line has height; it isn't a line break.
-        if (node.nextSibling) push("\n", font);
-      } else {
-        if ((node.tagName === "DIV" || node.tagName === "P") && !endsWithBreak()) push("\n", font);
-        const own = fontOf(node) ?? font;
-        node.childNodes.forEach((child) => walk(child, own));
-      }
-    }
-    positions.set(node, { enter, exit: length });
-  };
-  root.childNodes.forEach((child) => walk(child, base));
-  positions.set(root, { enter: 0, exit: length });
-  return { runs: mergeRuns(runs), positions };
-}
-
-function offsetOf(positions: Positions, node: Node, offset: number): number | undefined {
-  const at = positions.get(node);
-  if (!at) return undefined;
-  if (node.nodeType === Node.TEXT_NODE) return Math.min(at.enter + offset, at.exit);
-  const child = node.childNodes[offset];
-  return child ? positions.get(child)?.enter : at.exit;
-}
-
-// 注音 fonts show as they will on the board; 簡體 and 拼音 are marked in CSS and converted only on the board.
-const editorFamily = (font: FontId) => {
-  const family = fontFamilyOf(font);
-  // 繁體 is set too, so it doesn't take the editor's own font.
-  return family ? `${family}, var(--font-body)` : "var(--font-body)";
-};
-
-// Draws the runs into the editor, one <span> per run.
-function drawEditor(root: HTMLElement, runs: Run[]) {
-  const spans: Node[] = runs.map((r) => {
-    const span = document.createElement("span");
-    span.dataset.font = r.font;
-    span.style.fontFamily = editorFamily(r.font);
-    span.textContent = r.text;
-    return span;
-  });
-  // Without it a line break at the very end wouldn't show a new line.
-  if (plainText(runs).endsWith("\n")) spans.push(document.createElement("br"));
-  root.replaceChildren(...spans);
-}
-
-// Selects text from start to end (offsets) in an editor drawn by drawEditor.
-function selectRange(root: HTMLElement, start: number, end: number) {
-  const point = (target: number): [Node, number] => {
-    let at = 0;
-    for (const span of root.children) {
-      const text = span.firstChild;
-      if (!text) continue;
-      const len = (text as Text).data.length;
-      if (target <= at + len) return [text, target - at];
-      at += len;
-    }
-    return [root, root.childNodes.length];
-  };
-  const range = document.createRange();
-  range.setStart(...point(start));
-  range.setEnd(...point(end));
-  const sel = window.getSelection();
-  sel?.removeAllRanges();
-  sel?.addRange(range);
-}
-
-// ---------- Board ----------
-
-function BoardRun({ run, hanzi }: { run: Run; hanzi: ReturnType<typeof useHanzi> }) {
-  const family = fontFamilyOf(run.font);
-  return (
-    <span
-      className="read-run"
-      data-font={run.font}
-      style={family ? { fontFamily: `${family}, var(--font-board-text)` } : undefined}
-    >
-      <BoardText text={run.text} font={run.font} hanzi={isHans(run.font) ? hanzi : null} />
-    </span>
-  );
-}
 
 // ---------- Page ----------
 
@@ -207,37 +90,22 @@ export default function ReadAloud() {
   const applyFont = (font: FontId) => {
     const root = editor.current;
     if (!root) return;
-    const sel = window.getSelection();
-    const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-    const { runs: now, positions } = readEditor(root, baseFont);
-    if (range && !range.collapsed && root.contains(range.commonAncestorContainer)) {
-      const start = offsetOf(positions, range.startContainer, range.startOffset);
-      const end = offsetOf(positions, range.endContainer, range.endOffset);
-      if (start !== undefined && end !== undefined && start < end) {
-        redraw(setFont(now, start, end, font));
-        selectRange(root, start, end);
-        setCaretFont(font);
-        return;
-      }
+    const { runs: now, start, end } = readSelection(root, baseFont);
+    if (start !== undefined && start < end) {
+      redraw(setFont(now, start, end, font));
+      selectRange(root, start, end);
+      setCaretFont(font);
+      return;
     }
     setBaseFont(font);
     redraw(now.map((r) => ({ ...r, font })));
   };
 
   // 長[ㄓㄤˇ] becomes 長 with its reading picked; readings that don't exist are listed in the notice.
-  const withReadings = async (from: Run[]): Promise<Run[]> => {
-    const polyphones = await loadPolyphones();
-    const problems: ReadingProblem[] = [];
-    const out = keepReadingsWithCharacters(from).map((r) => {
-      const done = applyReadings(r.text, polyphones);
-      problems.push(...done.problems);
-      return { ...r, text: done.text };
-    });
-    if (problems.length > 0)
-      setNotice(
-        `這些讀音找不到：${problems.map((p) => `${p.char}[${p.reading}]（可用：${p.options.join("、")}）`).join("；")}`,
-      );
-    return out;
+  const pickReadings = async (from: Run[]): Promise<Run[]> => {
+    const done = await withReadings(from);
+    if (done.notice) setNotice(done.notice);
+    return done.runs;
   };
 
   // Pasted text comes in as plain text, in the font where it's pasted; 長[ㄓㄤˇ] picks the 破音字 reading.
@@ -246,7 +114,7 @@ export default function ReadAloud() {
     const text = e.clipboardData.getData("text/plain").replace(/\r\n?/g, "\n");
     if (!text) return;
     setNotice(null);
-    const out = /[[(（【]/.test(text) ? plainText(await withReadings([{ text, font: baseFont }])) : text;
+    const out = /[[(（【]/.test(text) ? plainText(await pickReadings([{ text, font: baseFont }])) : text;
     editor.current?.focus();
     document.execCommand("insertText", false, out);
   };
@@ -257,7 +125,7 @@ export default function ReadAloud() {
     setOpening(true);
     setNotice(null);
     try {
-      const opened = await withReadings(await readTextFile(file, baseFont));
+      const opened = await pickReadings(await readTextFile(file, baseFont));
       const last = opened.at(-1);
       if (last) last.text = last.text.replace(/\n+$/, "");
       redraw(mergeRuns(opened));
@@ -282,7 +150,7 @@ export default function ReadAloud() {
   return (
     <div className="game read">
       <header className="page-header">
-        <h1 className="page-title">唸課文</h1>
+        <h1 className="page-title">Read Aloud 唸課文</h1>
         <div className="page-tools">
           <div className="read-size" role="group" aria-label="黑板字的大小">
             <button className="btn-tag" onClick={() => setSize(SIZES[sizeIndex - 1])} disabled={sizeIndex <= 0} aria-label="字變小">
@@ -311,7 +179,7 @@ export default function ReadAloud() {
                   onClick={() => line.length > 0 && setCurrent(current === i ? null : i)}
                 >
                   {line.map((run, j) => (
-                    <BoardRun key={j} run={run} hanzi={hanzi} />
+                    <RunText key={j} run={run} hanzi={hanzi} />
                   ))}
                 </p>
               ))}

@@ -46,7 +46,7 @@ export default function Hangman() {
   return (
     <div className="game hangman">
       <header className="page-header">
-        <h1 className="page-title">Hangman</h1>
+        <h1 className="page-title">Hangman 吊人遊戲</h1>
         <div className="page-tools">
           <button
             className="btn-tag mute-btn"

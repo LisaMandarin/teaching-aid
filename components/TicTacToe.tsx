@@ -273,7 +273,7 @@ export default function TicTacToe() {
     <div className="game ttt">
       {winner && celebration && <Confetti key={celebration.id} accent={celebration.color} />}
       <header className="page-header">
-        <h1 className="page-title">圈圈叉叉</h1>
+        <h1 className="page-title">Tic-Tac-Toe 圈圈叉叉</h1>
         <div className="page-tools">
           {lessons.length > 0 && (
             <label className="tag-field">
