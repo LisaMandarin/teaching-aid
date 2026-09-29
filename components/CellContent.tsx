@@ -4,9 +4,10 @@
 // Text sizes are in cqmin, so the cell's container needs `container-type: size`.
 
 import { useEffect, useState } from "react";
-import { type FontId, isHans } from "@/lib/fonts";
+import { type FontId, fontFamilyOf, isHans } from "@/lib/fonts";
 import { type Hanzi, type Piece, hanziIfLoaded, loadHanzi } from "@/lib/hanzi";
 import type { Cell } from "@/lib/lessons";
+import type { Run } from "@/lib/readAloud";
 import { visibleLength } from "@/lib/zhuyin";
 
 // The 簡體／拼音 converter when the font needs it; null while it loads (the text shows as typed until then).
@@ -47,6 +48,20 @@ export function BoardText({ text, font, hanzi }: { text: string; font: FontId; h
           </ruby>
         ),
       )}
+    </span>
+  );
+}
+
+// A piece of lesson text in its own font (唸課文, 填空). `hanzi` is the converter, for the 簡體／拼音 fonts.
+export function RunText({ run, hanzi }: { run: Run; hanzi: Hanzi | null }) {
+  const family = fontFamilyOf(run.font);
+  return (
+    <span
+      className="board-run"
+      data-font={run.font}
+      style={family ? { fontFamily: `${family}, var(--font-board-text)` } : undefined}
+    >
+      <BoardText text={run.text} font={run.font} hanzi={isHans(run.font) ? hanzi : null} />
     </span>
   );
 }
