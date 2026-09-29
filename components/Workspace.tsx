@@ -7,6 +7,7 @@ import Hangman from "./Hangman";
 import ImageResizer from "./ImageResizer";
 import Materials from "./Materials";
 import NameDraw from "./NameDraw";
+import ReadAloud from "./ReadAloud";
 import Rewards from "./Rewards";
 import TicTacToe from "./TicTacToe";
 
@@ -14,6 +15,7 @@ const views = [
   { href: "/", fill: false, render: () => <Hangman /> },
   { href: "/tic-tac-toe", fill: false, render: () => <TicTacToe /> },
   { href: "/gifts", fill: true, render: () => <GiftBoxes /> },
+  { href: "/read-aloud", fill: true, render: () => <ReadAloud /> },
   { href: "/materials", fill: true, render: () => <Materials /> },
   { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
   { href: "/rewards", fill: true, render: () => <Rewards /> },
