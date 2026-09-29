@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BoardText, CellImage, pinyinLine, useHanzi } from "./CellContent";
+import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import type { Hanzi } from "@/lib/hanzi";
@@ -308,29 +309,32 @@ export default function GiftBoxes() {
   const hanzi = useHanzi(setup.font);
 
   return (
-    <div className="gifts">
+    <div className="game gifts">
       {lastGift?.kind === "good" && <Confetti key={result!.key} />}
 
-      <div className="materials-toolbar">
-        <h1 className="materials-title">開禮物</h1>
-        <button className="mute-btn" onClick={() => setMuted((m) => !m)} aria-pressed={muted} title={muted ? "開啟音效" : "靜音"}>
-          {muted ? "🔇 靜音中" : "🔊 音效開"}
-        </button>
-        <button
-          className={`mute-btn ${settingsOpen ? "is-on" : ""}`}
-          onClick={() => setSettingsOpen((o) => !o)}
-          aria-pressed={settingsOpen}
-        >
-          ⚙️ 設定
-        </button>
-      </div>
+      <header className="page-header">
+        <h1 className="page-title">開禮物</h1>
+        <div className="page-tools">
+          <button className="btn-tag mute-btn" onClick={() => setMuted((m) => !m)} aria-pressed={muted} title={muted ? "開啟音效" : "靜音"}>
+            {muted ? "🔇 靜音中" : "🔊 音效開"}
+          </button>
+          <button
+            className={`btn-tag ${settingsOpen ? "is-on" : ""}`}
+            onClick={() => setSettingsOpen((o) => !o)}
+            aria-pressed={settingsOpen}
+          >
+            ⚙️ 設定
+          </button>
+        </div>
+      </header>
 
       {settingsOpen && (
         <section className="gifts-settings">
           <div className="gifts-settings-row">
-            <label className="ttt-lesson">
-              禮物盒顏色：
+            <label className="tag-field">
+              禮物盒顏色
               <select
+                className="select-tag"
                 value={setup.colorMode}
                 onChange={(e) => changeSetup({ colorMode: e.target.value === "custom" ? "custom" : "random" })}
               >
@@ -338,9 +342,9 @@ export default function GiftBoxes() {
                 <option value="custom">自訂</option>
               </select>
             </label>
-            <label className="ttt-lesson">
-              封面字型：
-              <select value={setup.font} onChange={(e) => isFontId(e.target.value) && changeSetup({ font: e.target.value })}>
+            <label className="tag-field">
+              封面字型
+              <select className="select-tag" value={setup.font} onChange={(e) => isFontId(e.target.value) && changeSetup({ font: e.target.value })}>
                 {FONTS.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.name}
@@ -367,7 +371,7 @@ export default function GiftBoxes() {
           </p>
 
           <div className="ttt-import">
-            <label className={`btn ${importing ? "is-busy" : ""}`}>
+            <label className={`btn-tag ${importing ? "is-busy" : ""}`}>
               📥 匯入 Excel
               <input
                 type="file"
@@ -380,7 +384,7 @@ export default function GiftBoxes() {
                 }}
               />
             </label>
-            <button className="btn" onClick={() => void downloadGiftTemplate()}>
+            <button className="btn-tag" onClick={() => void downloadGiftTemplate()}>
               📄 下載範本
             </button>
           </div>
@@ -437,7 +441,7 @@ export default function GiftBoxes() {
       )}
 
       {round && (
-        <section className={`gifts-stage ${boom ? "is-boom" : ""}`}>
+        <Chalkboard className={`gifts-stage ${boom ? "is-boom" : ""}`}>
           <div className="gifts-result" aria-live="polite">
             {shaking !== null ? (
               <span className="gifts-placeholder">第 {shaking + 1} 個禮物盒…</span>
@@ -485,14 +489,14 @@ export default function GiftBoxes() {
           </ul>
 
           <div className="controls">
-            <button className="btn" onClick={openAll} disabled={busy || allOpened}>
+            <button className="btn-chalk-outline" onClick={openAll} disabled={busy || allOpened}>
               👀 全部打開
             </button>
-            <button className="btn btn-primary" onClick={confirmRestart} disabled={busy}>
+            <button className="btn-chalk-ghost" onClick={confirmRestart} disabled={busy}>
               🔄 重新開始
             </button>
           </div>
-        </section>
+        </Chalkboard>
       )}
     </div>
   );

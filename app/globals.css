@@ -805,23 +805,6 @@ button.ttt-cell:disabled {
   z-index: 1000;
 }
 
-.ttt-lesson {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 16px;
-  color: var(--muted);
-}
-
-.ttt-lesson select {
-  padding: 6px 10px;
-  font: inherit;
-  color: var(--ink);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-
 .ttt-import {
   flex-wrap: wrap;
   justify-content: center;
@@ -1731,22 +1714,14 @@ label.btn {
 }
 
 /* ---------- 開禮物 ---------- */
-.gifts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-
 .gifts-settings {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow: 0 2px 3px rgba(60, 35, 10, 0.28);
 }
 
 .gifts-settings-row {
@@ -1790,15 +1765,7 @@ label.btn {
 }
 
 .gifts-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
   flex: 1;
-  padding: 24px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
 }
 
 .gifts-stage.is-boom {
@@ -1822,20 +1789,20 @@ label.btn {
 }
 
 .gifts-result-text.kind-good {
-  color: #b45309;
+  color: var(--chalk-yellow);
 }
 
 .gifts-result-text.kind-bad {
-  color: var(--muted);
+  color: var(--chalk-dim);
 }
 
 .gifts-result-text.kind-bomb {
-  color: var(--danger);
+  color: var(--chalk-pink);
 }
 
 .gifts-placeholder {
   font-size: 0.6em;
-  color: var(--muted);
+  color: var(--chalk-dim);
 }
 
 .gifts-grid {
@@ -1997,6 +1964,8 @@ label.btn {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   transform: translateX(-50%);
   text-align: center;
+  color: var(--ink);
+  font-family: var(--font-body);
 }
 
 .gift-item.kind-bad {
