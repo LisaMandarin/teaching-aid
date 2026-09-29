@@ -840,6 +840,71 @@ label.btn {
   font-size: 21cqmin;
 }
 
+/* 簡體 text: the system's 簡體 font, so shared characters get their mainland shapes too. */
+[lang="zh-Hans"] {
+  font-family: system-ui, -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 簡體＋漢語拼音: 拼音 above each character. */
+.ttt-text ruby {
+  ruby-align: center;
+}
+
+.ttt-text rt {
+  font-size: 0.42em;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+[data-font="hans-pinyin"] .ttt-text {
+  line-height: 1.5;
+}
+
+[data-font="hans-pinyin"] .ttt-text.is-xl {
+  font-size: 46cqmin;
+}
+
+[data-font="hans-pinyin"] .ttt-text.is-large {
+  font-size: 32cqmin;
+}
+
+[data-font="hans-pinyin"] .ttt-text.is-medium {
+  font-size: 20cqmin;
+}
+
+[data-font="hans-pinyin"] .ttt-text.is-small {
+  font-size: 11cqmin;
+}
+
+[data-font="hans-pinyin"] .ttt-text.is-caption {
+  font-size: 15cqmin;
+}
+
+/* 只有漢語拼音: a syllable is several letters wide, so each size steps down; words may wrap at the spaces. */
+[data-font="pinyin-only"] .ttt-text {
+  overflow-wrap: normal;
+}
+
+[data-font="pinyin-only"] .ttt-text.is-xl {
+  font-size: 34cqmin;
+}
+
+[data-font="pinyin-only"] .ttt-text.is-large {
+  font-size: 22cqmin;
+}
+
+[data-font="pinyin-only"] .ttt-text.is-medium {
+  font-size: 17cqmin;
+}
+
+[data-font="pinyin-only"] .ttt-text.is-small {
+  font-size: 10cqmin;
+}
+
+[data-font="pinyin-only"] .ttt-text.is-caption {
+  font-size: 13cqmin;
+}
+
 /* ---------- Materials ---------- */
 .materials {
   display: flex;
@@ -1726,6 +1791,16 @@ label.btn {
 
 .has-cell-font .gift-cover-text.is-caption {
   font-size: min(22cqh, calc(94cqw / var(--width)));
+}
+
+/* 簡體＋漢語拼音: leave room above for the 拼音. */
+[data-font="hans-pinyin"] .gift-cover-text {
+  font-size: min(42cqh, calc(94cqw / var(--width)));
+  line-height: 1.5;
+}
+
+[data-font="hans-pinyin"] .gift-cover-text.is-caption {
+  font-size: min(18cqh, calc(94cqw / var(--width)));
 }
 
 .gift-paper {

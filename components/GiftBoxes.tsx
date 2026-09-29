@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CellImage } from "./CellContent";
+import { BoardText, CellImage, pinyinLine, useHanzi } from "./CellContent";
 import Confetti from "./Confetti";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
+import type { Hanzi } from "@/lib/hanzi";
 import { type Cell, type ParsedWorkbook, attachLocalImages } from "@/lib/lessons";
 import {
   DEFAULT_SETUP,
@@ -59,9 +60,11 @@ function ribbonFor(hex: string) {
 }
 
 // How wide the text is, in ems, so the cover can size it to fill the label on one line.
-// 注音 fonts put the 注音 beside each character, which makes it about 1.3× as wide.
-function textWidth(text: string, font: FontId): number {
-  const han = font === "plain" ? 1 : font === "zhuyin-only" ? 0.9 : 1.3;
+// 注音 fonts put the 注音 beside each character, which makes it about 1.3× as wide;
+// 拼音 above a character is often wider than the character. 只有漢語拼音 is measured as its letters.
+function textWidth(text: string, font: FontId, hanzi: Hanzi | null): number {
+  if (font === "pinyin-only" && hanzi) text = pinyinLine(hanzi.convert(text));
+  const han = font === "plain" || font === "hans" ? 1 : font === "zhuyin-only" ? 0.9 : font === "hans-pinyin" ? 1.5 : 1.3;
   let width = 0;
   for (const ch of text.replace(/[\u{E0100}-\u{E01EF}\uFE00-\uFE0F]/gu, "").trim())
     width += /[\p{Script=Han}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u.test(ch) ? han : ch === " " ? 0.3 : 0.6;
@@ -69,7 +72,7 @@ function textWidth(text: string, font: FontId): number {
 }
 
 // The box, with its cover (picture and/or text) on the front, or else its number.
-function BoxArt({ number, cover, font }: { number: number; cover?: Cell; font: FontId }) {
+function BoxArt({ number, cover, font, hanzi }: { number: number; cover?: Cell; font: FontId; hanzi: Hanzi | null }) {
   const hasCover = !!cover && (!!cover.text || !!cover.image || !!cover.imageName);
   return (
     <div className="gift-art">
@@ -110,9 +113,9 @@ function BoxArt({ number, cover, font }: { number: number; cover?: Cell; font: F
             {cover.text && (
               <span
                 className={`ttt-text gift-cover-text ${cover.image || cover.imageName ? "is-caption" : ""}`}
-                style={{ "--width": textWidth(cover.text, font) } as React.CSSProperties}
+                style={{ "--width": textWidth(cover.text, font, hanzi) } as React.CSSProperties}
               >
-                {cover.text}
+                <BoardText text={cover.text} font={font} hanzi={hanzi} />
               </span>
             )}
           </span>
@@ -302,6 +305,7 @@ export default function GiftBoxes() {
 
   const lastGift = result && round ? round.gifts[result.index] : null;
   const coverFont = fontFamilyOf(setup.font);
+  const hanzi = useHanzi(setup.font);
 
   return (
     <div className="gifts">
@@ -467,7 +471,7 @@ export default function GiftBoxes() {
                     disabled={opened || busy}
                     aria-label={opened ? `第 ${i + 1} 個禮物盒：${gift.text || kindOf(gift).name}` : `打開第 ${i + 1} 個禮物盒`}
                   >
-                    <BoxArt number={i + 1} cover={setup.covers[i]} font={setup.font} />
+                    <BoxArt number={i + 1} cover={setup.covers[i]} font={setup.font} hanzi={hanzi} />
                   </button>
                   {opened && (
                     <div key={isNew ? reveal.key : "done"} className={`gift-item kind-${gift.kind} ${isNew ? "is-new" : ""}`}>
