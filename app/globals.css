@@ -43,101 +43,176 @@ body {
 
 .sidebar {
   flex-shrink: 0;
-  background: var(--panel);
-  border-right: 1px solid var(--line);
-  padding: 12px;
+  padding: 14px 12px;
   transition: width 0.2s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .sidebar.is-open {
-  width: 240px;
+  width: 264px;
 }
 
+/* Wide enough for the toggle inside the 12px wooden frame. */
 .sidebar.is-closed {
-  width: 56px;
+  width: 72px;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 教學便利通: a paper label with a little chalkboard. */
+.sidebar-logo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--font-chalk);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--heading);
+  white-space: nowrap;
+  transform: rotate(-1deg);
+}
+
+.sidebar-logo-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 25px;
+}
+
+.logo-frame {
+  fill: var(--wood);
+}
+
+.logo-board {
+  fill: var(--board);
+}
+
+.logo-chalk {
+  fill: none;
+  stroke: var(--chalk);
+  stroke-width: 1.5;
+  stroke-linecap: round;
 }
 
 .sidebar-toggle {
+  flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--paper-border);
   border-radius: 6px;
-  background: var(--panel);
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--paper-shadow);
+  color: var(--ink);
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
 }
 
-.sidebar-title {
-  margin: 20px 4px 8px;
-  font-size: 13px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .sidebar nav {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Room for the tilted cards and pins, which stick out a little. */
+  padding: 6px 6px 8px;
+  margin: 0 -6px;
   overflow-y: auto;
 }
 
-/* LINE QR code pinned to the bottom of the sidebar. */
-.sidebar-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: inherit;
-  text-decoration: none;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.sidebar-line:hover {
-  background: var(--bg);
-}
-
-.sidebar-line img {
-  flex-shrink: 0;
-  border-radius: 4px;
-}
-
-.sidebar-line small {
-  color: var(--muted);
+.sidebar-title {
+  margin: 8px 0 0;
 }
 
 .sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.sidebar-item {
-  display: block;
-  padding: 10px 12px;
-  border-radius: 6px;
+/* The pin goes at the card's top left; each card gets its own pin color. */
+.nav-card .pin {
+  left: 12px;
+  margin-left: 0;
+}
+
+.sidebar li:nth-child(4n + 2) .pin {
+  background: var(--pin-blue);
+}
+
+.sidebar li:nth-child(4n + 3) .pin {
+  background: var(--pin-gold);
+}
+
+.sidebar li:nth-child(4n + 4) .pin {
+  background: var(--pin-teal);
+}
+
+/* .nav-card tilts by its own position, but each card is alone in its <li>, so tilt by the <li>. */
+.sidebar li:nth-child(even) .nav-card {
+  transform: rotate(-0.5deg);
+}
+
+.sidebar li .nav-card[aria-current="page"] {
+  transform: rotate(-1.6deg);
+}
+
+.nav-card {
+  transition: transform 0.15s;
+}
+
+.sidebar li .nav-card:hover:not([aria-current="page"]) {
+  transform: translateY(-2px) rotate(0.5deg);
+}
+
+.nav-card-text {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* LINE QR code pinned to the bottom of the sidebar: white paper held on with tape. */
+.sidebar-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 16px 10px 10px;
   color: inherit;
   text-decoration: none;
+  font-size: 13px;
+  line-height: 1.4;
+  transform: rotate(0.8deg);
 }
 
-.sidebar-item:hover {
-  background: var(--bg);
+.sidebar-line .tape {
+  top: -12px;
+  left: 50%;
+  width: 80px;
+  height: 22px;
+  transform: translateX(-50%) rotate(-3deg);
 }
 
-.sidebar-item.is-active {
-  background: #eef2ff;
-  color: var(--accent);
-  font-weight: 600;
+.sidebar-line img {
+  flex-shrink: 0;
+}
+
+.sidebar-line small {
+  color: var(--muted);
 }
 
 .stage {
