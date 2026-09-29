@@ -13,6 +13,13 @@ A website that helps language teachers teach through games.
 - **Hangman 吊人遊戲**
 - **Tic-Tac-Toe 圈圈叉叉**：格子可放圖片或文字，可選字型（繁體、注音、簡體、漢語拼音）並指定破音字讀音。
 - **Mystery Gift 開禮物**：上傳禮物 Excel（好禮物、不好的禮物、炸彈，各有數量），每一份禮物一個禮物盒。盒子顏色可隨機或自訂，正面可放圖片或文字（字型和破音字寫法同圈圈叉叉）取代數字。點盒子會搖晃（drum.mp3），打開後禮物從盒中出來放在盒子前面，依種類播 wow.mp3、oh oh.mp3 或 bomb.mp3。
+- **唸課文**：課文用大字寫在左邊的黑板上，讓全班一起唸；右邊的紙是老師的編輯區。
+  - 直接打字或貼上，也可以上傳 .txt（UTF-8 或 Big5）或 .docx（舊版 .doc 要先另存成 .docx）。
+  - 選取幾個字再按字型按鈕（繁體、注音・繁體楷書、只有注音、簡體＋漢語拼音…），就只改那幾個字；沒有選取就整篇一起改。注音字型在編輯區就看得到，簡體和拼音在編輯區用淺綠底標出來，到黑板上才轉換。
+  - **預先在 Word 裡設定注音**：用螢光筆（顏色不限）把要加注音的字標起來，上傳後這些字是「注音・繁體楷書」，其他的字是繁體。整份都沒標的話，整篇用上次選的字型。Google 文件的「醒目提示顏色」下載成 .docx 也算。
+  - 破音字寫成 `長[ㄓㄤˇ]` 指定讀音，打字貼上和上傳都可以用；只標了「長」、沒標 `[ㄓㄤˇ]` 也沒關係。
+  - 上方 A−／A＋ 調整黑板字的大小；點黑板上的一行會用黃粉筆框起來，標出正在唸的地方。
+  - 課文、每個字的字型和字的大小都存在瀏覽器裡，下次打開接著用。
 
 ### 教材
 
@@ -40,11 +47,12 @@ npm run dev   # http://localhost:3000
 - 規格在 `school-theme.css`（`app/globals.css` 開頭 import）：顏色、字型都是 CSS 變數，元件是現成的 class，例如 `.chalkboard`、`.chalk-tray`、`.cork`、`.paper`、`.pin`、`.tape`、`.btn-chalk`、`.btn-tag`、`.btn-board`、`.stamp`。新的樣式先找這裡有沒有可用的，缺少的補進這支檔案，不要寫死色碼。
 - 字型：`--font-chalk`（霞鶩文楷，標題、黑板上的字、按鈕）和 `--font-body`（Noto Sans TC，一般文字），在 `app/layout.tsx` 用 `next/font/google` 載入。
 - 共用元件：`components/Chalkboard.tsx`（黑板加粉筆槽）、`components/DropZone.tsx`（布告欄上的上傳區）、`components/Icons.tsx`（按鈕用的線條圖示）。
-- **題目字型不跟著主題**：題目文字（圈圈叉叉的格子、禮物盒封面）一律用字型選單選到的字型；「繁體」「簡體」用系統字型（`--font-board-text`），不會被黑板的 `--font-chalk` 蓋掉。
+- **題目字型不跟著主題**：題目文字（圈圈叉叉的格子、禮物盒封面、唸課文黑板上的課文）一律用字型選單選到的字型；「繁體」「簡體」用系統字型（`--font-board-text`），不會被黑板的 `--font-chalk` 蓋掉。
 
 ## 字型與破音字
 
 - 字型都是可自由分享的開放授權字型（ButTaiwan/bpmfvs 系列）：楷書、圓體、芫荽由 Google Fonts 提供，「只有注音」放在 `public/fonts/`（授權檔在同一個資料夾）。
-- 破音字用 IVS（讀音選擇記號）指定讀音。Excel 裡寫 `長[ㄓㄤˇ]`，匯入時會換成對應的記號；對照表是 `lib/polyphones.json`，來源是 bpmfvs 的 `poyin_db.txt`（教育部《國語一字多音審訂表》）。
+- 破音字用 IVS（讀音選擇記號）指定讀音。Excel 裡寫 `長[ㄓㄤˇ]`，匯入時（唸課文是上傳或貼上時）會換成對應的記號；對照表是 `lib/polyphones.json`，來源是 bpmfvs 的 `poyin_db.txt`（教育部《國語一字多音審訂表》）。
 - 更新對照表：`node scripts/build-polyphones.mjs`
 - 簡體和漢語拼音不用特別的字型：老師照樣打繁體，顯示時用 `opencc-js` 轉成簡體（只換字，不換用詞），用 `pinyin-pro` 依詞語加上拼音（`lib/hanzi.ts`）。Excel 裡用注音寫的破音字讀音會換算成拼音，蓋過自動判斷的讀音。這兩個套件只在選到簡體或拼音時才載入。
+- 唸課文的課文存成一段段「文字＋字型」（`lib/readAloud.ts`）。編輯區是 `contentEditable="plaintext-only"`：打字時以畫面為準，每次輸入後讀回成一段段；按字型按鈕時改資料再重畫編輯區，並還原選取範圍。改字型時不會把破音字和它的讀音記號拆開，不然讀音會失效。

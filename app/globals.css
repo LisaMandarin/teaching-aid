@@ -2331,3 +2331,218 @@ label.btn {
   font-size: 15px;
   cursor: pointer;
 }
+
+/* ---------- 唸課文 ---------- */
+/* The chalkboard with the text on the left, the paper the teacher types on at the right. */
+.read {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+}
+
+.read-size {
+  display: flex;
+  gap: 6px;
+}
+
+.read-size .btn-tag {
+  font-family: var(--font-chalk);
+  font-weight: 700;
+}
+
+.read-body {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+
+.read-body > .board-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.board-wrap .read-board {
+  flex: 1;
+  min-height: 420px;
+  align-items: stretch;
+  padding: 28px 36px;
+  overflow: auto;
+}
+
+.read-text {
+  font-family: var(--font-board-text);
+  line-height: 1.7;
+  color: var(--chalk);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.read-line {
+  margin: 0;
+  padding: 0 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.read-line.is-blank {
+  height: 1em;
+  cursor: default;
+}
+
+/* 正在唸的這一行：黃粉筆框起來 */
+.read-line.is-current {
+  color: var(--chalk-yellow);
+  box-shadow: inset 0 0 0 2px var(--chalk-yellow);
+}
+
+.read-run ruby {
+  ruby-align: center;
+}
+
+.read-run rt {
+  font-size: 0.42em;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.read-run[data-font="hans-pinyin"] {
+  line-height: 2.1;
+}
+
+/* Room between syllables, so neighbouring 拼音 don't run together. */
+.read-run[data-font="hans-pinyin"] ruby {
+  margin: 0 0.06em;
+}
+
+.read-placeholder {
+  margin: auto;
+  font-size: 28px;
+  color: var(--chalk-dim);
+}
+
+.read-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 300px;
+  flex-shrink: 0;
+  padding: 26px 14px 16px;
+  transform: rotate(0.4deg);
+}
+
+.read-panel .tape {
+  top: -12px;
+  left: 50%;
+  width: 120px;
+  margin-left: -60px;
+  transform: rotate(-3deg);
+}
+
+.read-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.read-panel-head h2 {
+  margin: 0 auto 0 0;
+  font-family: var(--font-chalk);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.read-panel-head .is-busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.read-fonts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.read-fonts-hint {
+  width: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.read-font {
+  height: 30px;
+  padding: 0 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-border);
+  border-radius: 8px;
+  font: 13px var(--font-body);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.read-font.is-on {
+  background: var(--sticky);
+  border-color: var(--chalk-yellow-shadow);
+  font-weight: 700;
+}
+
+.read-editor {
+  flex: 1;
+  min-height: 240px;
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: 1.5px solid var(--paper-border);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+}
+
+.read-editor:focus {
+  border-color: var(--board);
+}
+
+.read-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+
+/* 簡體／拼音 are converted only on the board; here they're marked so the teacher can see which words they are. */
+.read-editor [data-font="hans"],
+.read-editor [data-font="hans-pinyin"],
+.read-editor [data-font="pinyin-only"] {
+  background: var(--badge-green);
+  border-radius: 3px;
+}
+
+.read-notice {
+  margin: 0;
+  font-size: 14px;
+  color: var(--stamp-red);
+}
+
+.read-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 1000px) {
+  .read-body {
+    flex-direction: column;
+  }
+
+  .read-panel {
+    width: auto;
+  }
+}
