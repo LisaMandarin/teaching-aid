@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
+import WelcomeDialog from "@/components/WelcomeDialog";
 import Workspace from "@/components/Workspace";
 import "./globals.css";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
         </div>
+        <WelcomeDialog />
       </body>
     </html>
   );

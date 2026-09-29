@@ -11,7 +11,7 @@ A website that helps language teachers teach through games.
 ### 遊戲
 
 - **Hangman 吊人遊戲**
-- **Tic-Tac-Toe 圈圈叉叉**：格子可放圖片或文字，可選注音字型並指定破音字讀音。
+- **Tic-Tac-Toe 圈圈叉叉**：格子可放圖片或文字，可選字型（繁體、注音、簡體、漢語拼音）並指定破音字讀音。
 - **Mystery Gift 開禮物**：上傳禮物 Excel（好禮物、不好的禮物、炸彈，各有數量），每一份禮物一個禮物盒。盒子顏色可隨機或自訂，正面可放圖片或文字（字型和破音字寫法同圈圈叉叉）取代數字。點盒子會搖晃（drum.mp3），打開後禮物從盒中出來放在盒子前面，依種類播 wow.mp3、oh oh.mp3 或 bomb.mp3。
 
 ### 教材
@@ -33,8 +33,9 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 
-## 注音字型與破音字
+## 字型與破音字
 
 - 字型都是可自由分享的開放授權字型（ButTaiwan/bpmfvs 系列）：楷書、圓體、芫荽由 Google Fonts 提供，「只有注音」放在 `public/fonts/`（授權檔在同一個資料夾）。
 - 破音字用 IVS（讀音選擇記號）指定讀音。Excel 裡寫 `長[ㄓㄤˇ]`，匯入時會換成對應的記號；對照表是 `lib/polyphones.json`，來源是 bpmfvs 的 `poyin_db.txt`（教育部《國語一字多音審訂表》）。
 - 更新對照表：`node scripts/build-polyphones.mjs`
+- 簡體和漢語拼音不用特別的字型：老師照樣打繁體，顯示時用 `opencc-js` 轉成簡體（只換字，不換用詞），用 `pinyin-pro` 依詞語加上拼音（`lib/hanzi.ts`）。Excel 裡用注音寫的破音字讀音會換算成拼音，蓋過自動判斷的讀音。這兩個套件只在選到簡體或拼音時才載入。

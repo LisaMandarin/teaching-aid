@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CellImage, textSize } from "./CellContent";
+import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Confetti from "./Confetti";
 import { playCheer, playWriting, preloadMarkSounds, setMuted } from "@/lib/sounds";
 import {
@@ -239,6 +239,7 @@ export default function TicTacToe() {
 
 
   const cellFont = fontFamilyOf(font);
+  const hanzi = useHanzi(font);
 
   let status: React.ReactNode;
   if (winner) status = <span className={`team-text-${winner.team}`}>🏆 {names[winner.team] || SYMBOLS[winner.team]} 獲勝！</span>;
@@ -445,7 +446,11 @@ export default function TicTacToe() {
             >
               <span className="ttt-content">
                 {cell.image && <CellImage key={cell.image} cell={cell} />}
-                {cell.text && <span className={`ttt-text ${textSize(cell.text, !!cell.image)}`}>{cell.text}</span>}
+                {cell.text && (
+                  <span className={`ttt-text ${textSize(cell.text, !!cell.image)}`}>
+                    <BoardText text={cell.text} font={font} hanzi={hanzi} />
+                  </span>
+                )}
               </span>
               {marks[i] !== null && <MarkIcon team={marks[i]} />}
             </button>

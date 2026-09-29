@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { LINE_QR, LINE_URL } from "@/lib/line";
 import { selectMaterial, useMaterials } from "@/lib/materials";
 
 const games = [
@@ -83,6 +84,16 @@ export default function Sidebar() {
             ))}
           </ul>
         </nav>
+      )}
+      {open && (
+        <a className="sidebar-line" href={LINE_URL} target="_blank" rel="noopener noreferrer">
+          <img src={LINE_QR} alt="LINE 官方帳號 QR code" width={64} height={64} />
+          <span>
+            加入 LINE 官方帳號
+            <br />
+            <small>網址異動時通知您</small>
+          </span>
+        </a>
       )}
     </aside>
   );
