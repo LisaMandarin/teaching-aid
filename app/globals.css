@@ -2055,51 +2055,55 @@ label.btn {
 }
 
 /* ---------- Welcome dialog ---------- */
+/* Lined paper: every block is a whole number of 36px lines, so the text sits on the ruled lines. */
 .welcome {
-  width: min(440px, calc(100vw - 32px));
-  padding: 28px;
+  width: min(560px, calc(100vw - 32px));
+  padding: 26px 28px 26px 76px;
   border: none;
-  border-radius: 12px;
-  background: var(--panel);
+  border-radius: 2px;
   color: var(--ink);
-  line-height: 1.7;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  /* Let the tape stick out past the top edge. */
+  overflow: visible;
 }
 
 .welcome::backdrop {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(30, 20, 5, 0.45);
+}
+
+.welcome-tape-l {
+  top: -12px;
+  left: -26px;
+  transform: rotate(-32deg);
+}
+
+.welcome-tape-r {
+  top: -12px;
+  right: -26px;
+  transform: rotate(32deg);
 }
 
 .welcome h2 {
-  margin: 0 0 12px;
-  font-size: 22px;
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 26px;
+  line-height: 72px;
+  color: var(--heading);
 }
 
 .welcome p {
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .welcome-line {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin: 16px 0;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--bg);
+  height: 144px;
 }
 
-.line-button {
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: #06c755;
-  color: #fff;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.line-button:hover {
-  background: #05b04b;
+.welcome-line img {
+  width: 108px;
+  height: 108px;
 }
 
 .welcome-footer {
@@ -2107,6 +2111,7 @@ label.btn {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  height: 72px;
 }
 
 .welcome-footer label {
@@ -2114,16 +2119,6 @@ label.btn {
   align-items: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.welcome-footer button {
-  padding: 8px 20px;
-  border: none;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
   font-size: 15px;
   cursor: pointer;
 }
