@@ -14,6 +14,18 @@ const games = [
   { href: "/fill-blank", name: "Fill in the Blanks 填空" },
 ];
 
+// Everything a teacher sets up for one class; sounds, fonts and uploaded materials stay.
+const CLASS_DATA_KEYS = ["tictactoe-setup", "gifts-setup", "read-aloud", "fill-blank", "draw-list", "rewards-roster"];
+
+function clearClassData() {
+  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空的內容，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
+  try {
+    CLASS_DATA_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch {}
+  // Every game is kept mounted, so reload to make them all start empty.
+  location.reload();
+}
+
 const tools = [
   { href: "/rewards", name: "我的獎勵" },
   { href: "/draw", name: "抽籤筒" },
@@ -105,6 +117,11 @@ export default function Sidebar() {
                 </Link>
               </li>
             ))}
+            <li>
+              <button type="button" className="nav-card nav-card-button" onClick={clearClassData}>
+                {card("🧹 清除所有遊戲設定")}
+              </button>
+            </li>
           </ul>
         </nav>
       )}

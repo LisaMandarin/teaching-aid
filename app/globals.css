@@ -2709,3 +2709,11 @@ label.btn {
 .fill .board-wrap .read-board {
   min-height: 280px;
 }
+
+.nav-card-button {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
