@@ -12,10 +12,11 @@ const games = [
   { href: "/gifts", name: "Mystery Gift 開禮物" },
   { href: "/read-aloud", name: "Read Aloud 唸課文" },
   { href: "/fill-blank", name: "Fill in the Blanks 填空" },
+  { href: "/quick-check", name: "Quick Check 快判卡" },
 ];
 
 // Everything a teacher sets up for one class; sounds, fonts and uploaded materials stay.
-const CLASS_DATA_KEYS = ["tictactoe-setup", "gifts-setup", "read-aloud", "fill-blank", "draw-list", "rewards-roster"];
+const CLASS_DATA_KEYS = ["tictactoe-setup", "gifts-setup", "read-aloud", "fill-blank", "quick-check", "draw-list", "rewards-roster"];
 
 function clearClassData() {
   if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空的內容，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;

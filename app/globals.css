@@ -2710,6 +2710,236 @@ label.btn {
   min-height: 280px;
 }
 
+/* ---------- Quick Check ---------- */
+.quick {
+  max-width: 1320px;
+}
+
+.quick-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  width: 100%;
+}
+
+.quick-layout.is-editing {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+}
+
+.quick-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+
+.quick-heading {
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 28px;
+  color: var(--heading);
+}
+
+.quick-imports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-textarea {
+  min-height: 150px;
+  width: 100%;
+  resize: vertical;
+  padding: 12px;
+  border: 1.5px solid var(--paper-border);
+  border-radius: 8px;
+  background: #fffef8;
+  color: var(--ink);
+  font: 16px/1.6 var(--font-body);
+}
+
+.quick-apply {
+  width: 100%;
+}
+
+.quick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.quick-edit-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 54px 34px 34px;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-edit-row select {
+  width: 54px;
+  height: 36px;
+  border: 1.5px solid var(--paper-border);
+  border-radius: 6px;
+  background: #fffef8;
+  color: var(--ink);
+  font: 700 15px var(--font-body);
+}
+
+.quick-row-number {
+  color: var(--ink-soft);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.quick-edit-row input {
+  min-width: 0;
+  height: 36px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--paper-border);
+  border-radius: 6px;
+  background: #fffef8;
+  color: var(--ink);
+  font: 15px var(--font-body);
+}
+
+.quick-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--paper-border);
+  border-radius: 6px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--paper-shadow);
+  color: var(--ink);
+  font: 700 20px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.quick-board .chalkboard {
+  align-items: stretch;
+  min-height: 620px;
+}
+
+.quick-score {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--chalk);
+  font: 700 22px var(--font-chalk);
+}
+
+.quick-score span {
+  padding: 4px 12px;
+  border: 2px dashed var(--chalk-dim);
+  border-radius: 8px;
+}
+
+.quick-deck {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.quick-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 190px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.quick-card.is-right {
+  border-color: var(--success);
+  box-shadow: inset 0 0 0 3px rgba(134, 239, 172, 0.22);
+}
+
+.quick-card.is-wrong {
+  border-color: var(--chalk-pink);
+  box-shadow: inset 0 0 0 3px rgba(251, 113, 133, 0.22);
+}
+
+.quick-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  min-height: 130px;
+}
+
+.quick-card-content img {
+  width: 100%;
+  max-height: 118px;
+  object-fit: contain;
+}
+
+.quick-card-content p {
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+  color: var(--chalk);
+  font: 700 28px/1.25 var(--font-board-text);
+}
+
+.quick-deck.has-cell-font .quick-card-content p {
+  font-family: var(--cell-font);
+  font-weight: 400;
+}
+
+.quick-deck[data-font="hans-pinyin"] .quick-card-content p {
+  line-height: 1.55;
+}
+
+.quick-card-content .quick-empty {
+  color: var(--chalk-dim);
+  font-size: 20px;
+}
+
+.quick-result {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  font-size: clamp(72px, 9vw, 132px);
+  line-height: 1;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.2), 0 0 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.quick-result.is-right { color: var(--success); }
+.quick-result.is-wrong { color: var(--chalk-pink); }
+
+.quick-card:focus-visible {
+  outline: 4px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 980px) {
+  .quick-layout.is-editing {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-board .chalkboard {
+    min-height: 420px;
+  }
+}
+
 .nav-card-button {
   width: 100%;
   border: 0;
