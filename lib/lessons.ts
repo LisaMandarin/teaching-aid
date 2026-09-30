@@ -11,6 +11,8 @@ export type Cell = {
   image: string | null;
   // The file name as written in Excel, shown when the image can't be loaded.
   imageName?: string;
+  // Optional answer used by games that reveal whether a card is right or wrong.
+  correct?: boolean;
 };
 
 export type Lesson = { name: string; items: Cell[] };
@@ -149,7 +151,8 @@ export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
     const header = rows[0].map(cellText);
     let textCol = header.findIndex((h) => h.includes("文字"));
     let imageCol = header.findIndex((h) => h.includes("圖片"));
-    const hasHeader = textCol !== -1 || imageCol !== -1;
+    const answerCol = header.findIndex((h) => /^(Y\s*\/\s*N|答案|正確)$/i.test(h));
+    const hasHeader = textCol !== -1 || imageCol !== -1 || answerCol !== -1;
     if (textCol === -1) textCol = imageCol === 0 ? 1 : 0;
     if (imageCol === -1) imageCol = textCol === 1 ? 0 : 1;
 
@@ -157,22 +160,27 @@ export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
     for (const row of hasHeader ? rows.slice(1) : rows) {
       const raw = cellText(row[textCol]);
       const img = cellText(row[imageCol]);
+      const answer = answerCol === -1 ? "" : cellText(row[answerCol]).toUpperCase();
       if (!raw && !img) continue;
+
+      const correct = answer === "N" ? false : answer === "Y" ? true : undefined;
+      if (answer && correct === undefined)
+        warnings.push(`「${name}」的「${raw || img}」：Y/N 欄請填 Y 或 N，這張卡先當作 Y。`);
 
       // 長[ㄓㄤˇ] → 長 + the variation selector the 注音 fonts use for that reading.
       const { text, problems } = applyReadings(raw, polyphones);
       for (const p of problems)
         warnings.push(`「${name}」的「${raw}」：「${p.char}」沒有「${p.reading}」這個讀音，可以寫：${p.options.join("、")}。`);
 
-      if (!img) items.push({ text, image: null });
+      if (!img) items.push({ text, image: null, correct });
       else if (isDriveFolder(img)) {
         warnings.push(`「${name}」的「${text}」：圖片欄是 Google Drive 資料夾連結，請改貼那張圖片自己的分享連結。`);
-        items.push({ text, image: null });
+        items.push({ text, image: null, correct });
       }
-      else if (/^https?:\/\//i.test(img)) items.push({ text, image: directLink(img), imageName: img });
-      else if (folder) items.push({ text, image: fileInFolder(folder, img), imageName: img });
+      else if (/^https?:\/\//i.test(img)) items.push({ text, image: directLink(img), imageName: img, correct });
+      else if (folder) items.push({ text, image: fileInFolder(folder, img), imageName: img, correct });
       else {
-        items.push({ text, image: null, imageName: img });
+        items.push({ text, image: null, imageName: img, correct });
         localNames.add(img);
       }
     }
@@ -303,6 +311,72 @@ export async function downloadTemplate() {
     "圈圈叉叉題目範本.xlsx",
     {
       dropdowns: [{ sheet: SETTINGS_SHEET, range: "B4", source: listRef(OPTIONS_SHEET, "A", 2, FONTS.length + 1) }],
+      hidden: [OPTIONS_SHEET],
+    },
+  );
+}
+
+export async function downloadQuickCheckTemplate() {
+  const help = [
+    "「Quick Check 快判卡」素材範本",
+    "",
+    "・在「素材」工作表中，每列會成為一張卡片。",
+    "・「文字」和「圖片」可以只填一種，也可以兩種都填。",
+    "・「Y/N」填 Y 代表正確，填 N 代表錯誤；點擊卡片後才會揭曉。",
+    "・破音字可在字後標記讀音，例如：長[ㄓㄤˇ]大、音樂[ㄩㄝˋ]、銀行[ㄏㄤˊ]。",
+    "・在「設定」工作表選擇字型，可顯示繁體、注音、只有注音、簡體或漢語拼音。",
+    "・「圖片」可以填圖片檔名、完整網址，或單一圖片的 Google Drive / Dropbox 分享連結。",
+    "・填圖片檔名時，匯入 Excel 後會請你從電腦選取圖片，系統會依檔名自動配對。",
+    "・檔名要完全一樣（包含 .jpg / .png），大小寫不拘。",
+    "・「設定」可填 Dropbox 圖片資料夾分享連結；有填時會直接到該資料夾找圖。",
+    "・Google Drive 資料夾不能依檔名找圖；請改貼單一圖片分享連結，或從電腦選取圖片。",
+  ];
+
+  await saveWorkbook(
+    [
+      {
+        sheet: HELP_SHEET,
+        columns: [{ width: 90 }],
+        data: help.map((line, i) => [i === 0 ? { value: line, fontWeight: "bold" as const, fontSize: 16 } : line]),
+      },
+      {
+        sheet: SETTINGS_SHEET,
+        columns: [{ width: 16 }, { width: 90 }],
+        data: [
+          [{ value: "項目", ...bold }, { value: "內容", ...bold }],
+          [FOLDER_LABEL, ""],
+          ["", "↑ 可貼 Dropbox 資料夾分享連結；圖片放在電腦時留空"],
+          [FONT_LABEL, FONTS[0].name],
+        ],
+      },
+      {
+        sheet: "素材",
+        columns: [{ width: 24 }, { width: 50 }, { width: 12 }],
+        stickyRowsCount: 1,
+        data: [
+          [{ value: "文字", ...bold }, { value: "圖片", ...bold }, { value: "Y/N", ...bold }],
+          ["早餐", "", "Y"],
+          ["午餐", "lunch.jpg", "Y"],
+          ["晚餐", "https://example.com/dinner.jpg", "N"],
+          ["點心", "", "N"],
+        ],
+      },
+      {
+        sheet: OPTIONS_SHEET,
+        data: [
+          [{ value: "Y/N", ...bold }, { value: FONT_LABEL, ...bold }],
+          ["Y", FONTS[0].name],
+          ["N", FONTS[1].name],
+          ...FONTS.slice(2).map((font) => ["", font.name]),
+        ],
+      },
+    ],
+    "快判卡素材範本.xlsx",
+    {
+      dropdowns: [
+        { sheet: "素材", range: "C2:C200", source: listRef(OPTIONS_SHEET, "A", 2, 3) },
+        { sheet: SETTINGS_SHEET, range: "B4", source: listRef(OPTIONS_SHEET, "B", 2, FONTS.length + 1) },
+      ],
       hidden: [OPTIONS_SHEET],
     },
   );
