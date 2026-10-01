@@ -35,6 +35,8 @@ const tools = [
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
+  const [gamesOpen, setGamesOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const pathname = usePathname();
   const { items, selectedId } = useMaterials();
   const onMaterials = pathname === "/materials";
@@ -50,6 +52,21 @@ export default function Sidebar() {
       <span className="pin" aria-hidden="true" />
       <span className="nav-card-text">{label}</span>
     </>
+  );
+
+  // Clickable tape-label that expands/collapses the section below it.
+  const sectionTitle = (label: string, sectionOpen: boolean, toggle: () => void) => (
+    <button
+      type="button"
+      className="sidebar-title tape-label sidebar-title-toggle"
+      onClick={toggle}
+      aria-expanded={sectionOpen}
+    >
+      {label}
+      <span className={`sidebar-title-arrow ${sectionOpen ? "is-open" : ""}`} aria-hidden="true">
+        ▾
+      </span>
+    </button>
   );
 
   return (
@@ -77,16 +94,18 @@ export default function Sidebar() {
       </div>
       {open && (
         <nav>
-          <h2 className="sidebar-title tape-label">遊戲</h2>
-          <ul>
-            {games.map((g) => (
-              <li key={g.href}>
-                <Link href={g.href} {...item(pathname === g.href)}>
-                  {card(g.name)}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {sectionTitle("遊戲", gamesOpen, () => setGamesOpen((o) => !o))}
+          {gamesOpen && (
+            <ul>
+              {games.map((g) => (
+                <li key={g.href}>
+                  <Link href={g.href} {...item(pathname === g.href)}>
+                    {card(g.name)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <h2 className="sidebar-title tape-label">教材</h2>
           <ul>
@@ -109,21 +128,23 @@ export default function Sidebar() {
             </li>
           </ul>
 
-          <h2 className="sidebar-title tape-label">工具</h2>
-          <ul>
-            {tools.map((t) => (
-              <li key={t.href}>
-                <Link href={t.href} {...item(pathname === t.href)}>
-                  {card(t.name)}
-                </Link>
+          {sectionTitle("工具", toolsOpen, () => setToolsOpen((o) => !o))}
+          {toolsOpen && (
+            <ul>
+              {tools.map((t) => (
+                <li key={t.href}>
+                  <Link href={t.href} {...item(pathname === t.href)}>
+                    {card(t.name)}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <button type="button" className="nav-card nav-card-button" onClick={clearClassData}>
+                  {card("🧹 清除所有遊戲設定")}
+                </button>
               </li>
-            ))}
-            <li>
-              <button type="button" className="nav-card nav-card-button" onClick={clearClassData}>
-                {card("🧹 清除所有遊戲設定")}
-              </button>
-            </li>
-          </ul>
+            </ul>
+          )}
         </nav>
       )}
       {open && (

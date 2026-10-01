@@ -138,6 +138,25 @@ body {
   margin: 8px 0 0;
 }
 
+.sidebar-title-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.sidebar-title-arrow {
+  display: inline-block;
+  font-size: 12px;
+  transition: transform 0.15s;
+  transform: rotate(-90deg);
+}
+
+.sidebar-title-arrow.is-open {
+  transform: rotate(0deg);
+}
+
 .sidebar ul {
   display: flex;
   flex-direction: column;
