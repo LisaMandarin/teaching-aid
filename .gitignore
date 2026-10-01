@@ -31,3 +31,13 @@ venv/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+
+# Personal Claude Code skill installs (marketplace skills, not part of this app)
+/.agents/
+/skills-lock.json
+/.claude/skills/diagnosing-bugs
+/.claude/skills/grill-me
+/.claude/skills/handoff
+/.claude/skills/prototype
+/.claude/skills/setup-matt-pocock-skills
+/.claude/skills/tdd
