@@ -13,7 +13,7 @@ import Confetti from "./Confetti";
 import { FolderIcon } from "./Icons";
 import { type Blank, blanksOf, shuffle, slotWidth, toggleBlank, touchesBlank } from "@/lib/fillBlank";
 import { FONTS, type FontId, isFontId, isHans } from "@/lib/fonts";
-import { type Run, isRuns, mergeRuns, plainText, readTextFile, setFont, toLines, withReadings } from "@/lib/readAloud";
+import { type Run, isRuns, mergeRuns, plainText, readDocxFile, setFont, toLines, withReadings } from "@/lib/readAloud";
 import { drawEditor, editorFamily, fontOf, readEditor, readSelection, selectRange } from "@/lib/runEditor";
 import { playDing, playSoundFile, playUhOh, preloadSoundFile } from "@/lib/sounds";
 
@@ -198,7 +198,7 @@ export default function FillBlank() {
     setOpening(true);
     setNotice(null);
     try {
-      const done = await withReadings(await readTextFile(file, baseFont, true));
+      const done = await withReadings(await readDocxFile(file, baseFont, true));
       if (done.notice) setNotice(done.notice);
       const last = done.runs.at(-1);
       if (last) last.text = last.text.replace(/\n+$/, "");
@@ -391,7 +391,7 @@ export default function FillBlank() {
               上傳檔案
               <input
                 type="file"
-                accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 hidden
                 disabled={opening}
                 onChange={(e) => {
@@ -437,7 +437,7 @@ export default function FillBlank() {
             role="textbox"
             aria-multiline="true"
             aria-label="課文內容"
-            data-placeholder="在這裡輸入課文，或上傳 .txt／.docx 檔"
+            data-placeholder="在這裡輸入課文，或上傳 .docx 檔"
             style={{ fontFamily: editorFamily(baseFont) }}
             spellCheck={false}
             onInput={readBack}

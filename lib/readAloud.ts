@@ -82,20 +82,16 @@ export function isRuns(value: unknown): value is Run[] {
 const HIGHLIGHTED: FontId = "bpmf-kai";
 const UNMARKED: FontId = "plain";
 
-// A .txt file (UTF-8, or Big5 from older Windows programs) or a Word .docx file.
-// Text without highlighting is all in the base font. `blanks`: underlined words become blanks.
-export async function readTextFile(file: File, base: FontId, blanks = false): Promise<Run[]> {
+// A Word .docx file. Text without highlighting is all in the base font.
+// `blanks`: underlined words become blanks.
+export async function readDocxFile(file: File, base: FontId, blanks = false): Promise<Run[]> {
   const name = file.name.toLowerCase();
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if (name.endsWith(".docx")) return readDocx(bytes, base, blanks);
-  if (name.endsWith(".doc")) throw new Error("舊版的 Word（.doc）檔打不開，請在 Word 另存成 .docx 再上傳。");
-  let text: string;
-  try {
-    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-  } catch {
-    text = new TextDecoder("big5").decode(bytes);
+  if (!name.endsWith(".docx")) {
+    if (name.endsWith(".doc")) throw new Error("舊版的 Word（.doc）檔打不開，請在 Word 另存成 .docx 再上傳。");
+    throw new Error("請上傳 Word（.docx）檔。");
   }
-  return mergeRuns([{ text: text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n"), font: base }]);
+  return readDocx(bytes, base, blanks);
 }
 
 const propsOf = (run: Element) => [...([...run.children].find((c) => c.tagName === "w:rPr")?.children ?? [])];

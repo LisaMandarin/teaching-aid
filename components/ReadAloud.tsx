@@ -8,7 +8,7 @@ import { RunText, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import { FolderIcon } from "./Icons";
 import { FONTS, type FontId, isFontId, isHans } from "@/lib/fonts";
-import { type Run, isRuns, mergeRuns, plainText, readTextFile, setFont, toLines, withReadings } from "@/lib/readAloud";
+import { type Run, isRuns, mergeRuns, plainText, readDocxFile, setFont, toLines, withReadings } from "@/lib/readAloud";
 import { drawEditor, editorFamily, fontOf, readEditor, readSelection, selectRange } from "@/lib/runEditor";
 
 const STORAGE_KEY = "read-aloud";
@@ -125,7 +125,7 @@ export default function ReadAloud() {
     setOpening(true);
     setNotice(null);
     try {
-      const opened = await pickReadings(await readTextFile(file, baseFont));
+      const opened = await pickReadings(await readDocxFile(file, baseFont));
       const last = opened.at(-1);
       if (last) last.text = last.text.replace(/\n+$/, "");
       redraw(mergeRuns(opened));
@@ -198,7 +198,7 @@ export default function ReadAloud() {
               上傳檔案
               <input
                 type="file"
-                accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 hidden
                 disabled={opening}
                 onChange={(e) => {
@@ -235,7 +235,7 @@ export default function ReadAloud() {
             role="textbox"
             aria-multiline="true"
             aria-label="課文內容"
-            data-placeholder="在這裡輸入課文，或上傳 .txt／.docx 檔"
+            data-placeholder="在這裡輸入課文，或上傳 .docx 檔"
             style={{ fontFamily: editorFamily(baseFont) }}
             spellCheck={false}
             onInput={readBack}
