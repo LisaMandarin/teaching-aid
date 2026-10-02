@@ -63,6 +63,19 @@
   --stick-edge: #c9a86a;
   --stick-ink: #5a3010;
 
+  /* 立可拍 */
+  --camera-body: #f3eee2;
+  --camera-edge: #cfc4aa;
+  --camera-dark: #2f2f2d;
+  --camera-lens-ring: #4b4b48;
+  --camera-glass: #22384a;
+  --camera-glass-light: #7fa6c2;
+  --camera-button: #d8544a;        /* 快門 */
+  --camera-button-shadow: #9e3a32;
+  --camera-flash: #fdfbf3;         /* 閃光燈窗、拍照時的閃光 */
+  --photo-frame: #fbf9f2;          /* 照片的白框 */
+  --film-dark: #2b2620;            /* 還沒顯影的底片 */
+
   /* 筆記紙上的記號（抽籤名單） */
   --paper-rule: rgba(110, 150, 200, 0.3);   /* 每一行底下的藍線 */
   --paper-margin: rgba(214, 90, 80, 0.5);  /* 左邊的紅色邊線 */

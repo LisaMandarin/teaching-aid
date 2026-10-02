@@ -6,6 +6,7 @@ import FillBlank from "./FillBlank";
 import GiftBoxes from "./GiftBoxes";
 import Hangman from "./Hangman";
 import ImageResizer from "./ImageResizer";
+import InstantCamera from "./InstantCamera";
 import Materials from "./Materials";
 import NameDraw from "./NameDraw";
 import QuickCheck from "./QuickCheck";
@@ -20,6 +21,7 @@ const views = [
   { href: "/read-aloud", fill: true, render: () => <ReadAloud /> },
   { href: "/fill-blank", fill: true, render: () => <FillBlank /> },
   { href: "/quick-check", fill: true, render: () => <QuickCheck /> },
+  { href: "/instant-camera", fill: true, render: () => <InstantCamera /> },
   { href: "/materials", fill: true, render: () => <Materials /> },
   { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
   { href: "/rewards", fill: true, render: () => <Rewards /> },

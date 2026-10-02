@@ -2966,3 +2966,567 @@ label.btn {
   text-align: left;
   cursor: pointer;
 }
+
+/* ---------- 立可拍 ---------- */
+.instant {
+  flex: 1;
+  min-width: 0;
+  max-width: 1320px;
+  border-radius: 12px;
+  outline: 3px dashed transparent;
+  outline-offset: 4px;
+}
+
+.instant.is-dragging {
+  outline-color: var(--accent);
+}
+
+.instant label.is-busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* The board, and the photo list at the right while 照片 is open. */
+.instant-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  width: 100%;
+}
+
+.instant-layout.is-managing {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.board-wrap .instant-board {
+  align-items: stretch;
+  min-height: 540px;
+}
+
+/* The camera on the left, the photos taken so far beside it. */
+.instant-scene {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  flex: 1;
+  min-height: 0;
+}
+
+.instant-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  width: 280px;
+  padding-top: 8px;
+}
+
+/* The camera is drawn in a 260 × 230 SVG; the shutter and the slot's window are placed on it in those units. */
+.instant-camera {
+  position: relative;
+  width: 260px;
+}
+
+.instant-camera-svg {
+  display: block;
+  width: 100%;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.35));
+}
+
+.instant-camera.is-shooting .instant-camera-svg {
+  animation: instant-kick 0.25s ease-out;
+}
+
+.instant-body {
+  fill: var(--camera-body);
+  stroke: var(--camera-edge);
+  stroke-width: 1.5;
+}
+
+.instant-dark {
+  fill: var(--camera-dark);
+}
+
+.instant-lens-ring {
+  fill: var(--camera-lens-ring);
+}
+
+.instant-glass-light {
+  stop-color: var(--camera-glass-light);
+}
+
+.instant-glass-dark {
+  stop-color: var(--camera-glass);
+}
+
+.instant-shine {
+  fill: color-mix(in srgb, var(--camera-flash) 55%, transparent);
+}
+
+.instant-flash-window {
+  fill: var(--camera-flash);
+  stroke: var(--camera-edge);
+  stroke-width: 1.5;
+}
+
+.instant-flash-lines {
+  fill: none;
+  stroke: var(--camera-edge);
+  stroke-width: 1.5;
+}
+
+.instant-slot {
+  fill: color-mix(in srgb, var(--camera-dark), black 60%);
+}
+
+/* The red shutter button, on the camera's front at (224, 112). */
+.instant-shutter {
+  position: absolute;
+  left: calc(207 / 260 * 100%);
+  top: calc(95 / 230 * 100%);
+  width: calc(34 / 260 * 100%);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid var(--camera-button-shadow);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--camera-button), white 35%), var(--camera-button) 60%);
+  box-shadow: 0 3px 0 var(--camera-button-shadow);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+.instant-shutter:active:not(:disabled),
+.instant-camera.is-shooting .instant-shutter {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--camera-button-shadow);
+}
+
+.instant-shutter:disabled {
+  cursor: not-allowed;
+}
+
+/* Under the slot (y = 193.5): the photo slides down into view; what's above the slot is hidden. */
+.instant-eject-window {
+  position: absolute;
+  top: calc(193.5 / 230 * 100%);
+  left: calc(45 / 260 * 100%);
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: calc(170 / 260 * 100%);
+  height: 200px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.instant-take {
+  height: 60px;
+  padding: 0 40px;
+  font-size: 26px;
+}
+
+.instant-done {
+  margin: 0;
+  font-size: 24px;
+  color: var(--chalk-yellow);
+}
+
+.instant-left {
+  margin: 0;
+  font-size: 20px;
+  color: var(--chalk-dim);
+}
+
+.instant-left strong {
+  color: var(--chalk);
+}
+
+/* A photo in its white frame, wider at the bottom. Its picture fits a --box square in the shape set by --ar
+   (width ÷ height); the frame is in proportion to the picture's shorter side, so a photo keeps its look at any size. */
+.instant-photo {
+  --box: 150px;
+  --w: calc(var(--box) * min(1, var(--ar)));
+  --s: min(var(--w), var(--w) / var(--ar));
+  display: block;
+  flex-shrink: 0;
+  margin: 0;
+  padding: calc(var(--s) * 0.06) calc(var(--s) * 0.06) calc(var(--s) * 0.22);
+  border: 0;
+  border-radius: 2px;
+  background: var(--photo-frame);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.instant-photo-picture {
+  position: relative;
+  display: block;
+  width: var(--w);
+  aspect-ratio: var(--ar);
+  overflow: hidden;
+  background: var(--film-dark);
+}
+
+.instant-photo-picture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+/* The film before it develops. */
+.instant-photo-film {
+  position: absolute;
+  inset: 0;
+  background: var(--film-dark);
+  opacity: 0;
+}
+
+/* Coming out of the camera: still dark. Runs for EJECT_MS (1.4s) with the shutter's 0.2s first. */
+.instant-eject {
+  --box: 132px;
+  animation: instant-eject 1.2s 0.2s cubic-bezier(0.3, 0.2, 0.4, 1) both;
+}
+
+.instant-eject .instant-photo-film {
+  opacity: 1;
+}
+
+/* Full screen, as large as fits with room for the hint underneath. */
+.instant-big {
+  --w: min(84vw, 70vh * var(--ar));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.instant-big.is-developing .instant-photo-film {
+  animation: instant-develop-film 2.2s 0.5s ease-in both;
+}
+
+.instant-big.is-developing img {
+  animation: instant-develop-picture 2.8s 0.5s ease-out both;
+}
+
+/* The photos taken so far, each leaning a little; click one to see it big again. */
+.instant-pile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  gap: 24px 20px;
+  max-height: 500px;
+  margin: 0;
+  padding: 18px 12px;
+  list-style: none;
+  overflow: auto;
+}
+
+.instant-pile li {
+  display: flex;
+}
+
+.instant-pile-photo {
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.instant-pile-photo:hover {
+  box-shadow: 0 0 0 3px var(--chalk-yellow), 0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+/* Its spot stays empty while it's out of the pile (coming out, big, or on its way back). */
+.instant-pile-photo.is-away {
+  visibility: hidden;
+}
+
+.instant-pile-empty {
+  width: 100%;
+  padding-top: 140px;
+  text-align: center;
+  font-size: 24px;
+  color: var(--chalk-dim);
+}
+
+.instant-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 5vh;
+  background-color: rgba(20, 15, 8, 0.82);
+  outline: none;
+  cursor: pointer;
+  animation: instant-dim 0.5s ease-out;
+  transition: background-color 0.5s;
+}
+
+.instant-overlay.is-landing {
+  background-color: transparent;
+  pointer-events: none;
+}
+
+.instant-overlay-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2.5vh;
+  margin: 0;
+  text-align: center;
+  font: 22px var(--font-chalk);
+  color: var(--chalk-dim);
+}
+
+.is-landing .instant-overlay-hint {
+  visibility: hidden;
+}
+
+.instant-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: var(--camera-flash);
+  pointer-events: none;
+  animation: instant-flash 0.45s ease-out forwards;
+}
+
+/* 照片 list: thumbnails in the order they're taken with 照順序. */
+.instant-manage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+
+.instant-manage-heading {
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 28px;
+  color: var(--heading);
+}
+
+.instant-manage-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.instant-manage-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 420px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow: auto;
+}
+
+.instant-manage-list li {
+  position: relative;
+}
+
+.instant-manage-list img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1.5px solid var(--paper-border);
+  border-radius: 4px;
+  background: var(--paper-warm);
+}
+
+.instant-manage-number {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 75%, transparent);
+  color: var(--paper);
+  font: 700 13px/22px var(--font-body);
+  text-align: center;
+}
+
+.instant-manage-stamp {
+  position: absolute;
+  left: 4px;
+  bottom: 6px;
+  background: var(--paper);
+}
+
+.instant-manage-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+}
+
+.instant-manage-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.instant-manage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The teacher's words under the board, in the font picked in 字型. Click the text to edit it. */
+.instant-text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 22px 16px;
+  transform: rotate(-0.2deg);
+}
+
+.instant-text .tape {
+  top: -12px;
+  left: 50%;
+  width: 120px;
+  margin-left: -60px;
+  transform: rotate(2deg);
+}
+
+.instant-text-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.instant-text-head h2 {
+  margin: 0 auto 0 0;
+  font-family: var(--font-chalk);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.instant-text-body {
+  display: block;
+  width: 100%;
+  min-height: calc(1.7em + 20px);
+  margin: 0;
+  padding: 8px 14px;
+  border: 1.5px dashed var(--paper-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-board-text);
+  /* 注音 fonts ship in one weight; a synthesized bold smears the small 注音 marks. */
+  font-weight: 400;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.instant-text-show {
+  cursor: text;
+}
+
+.instant-text-show:hover {
+  border-color: var(--board);
+}
+
+.instant-text-input {
+  resize: vertical;
+  field-sizing: content;
+  border-style: solid;
+  border-color: var(--board);
+  outline: none;
+}
+
+.instant-text-placeholder,
+.instant-text-input::placeholder {
+  color: var(--ink-faint);
+}
+
+.instant-text-body[data-font="hans-pinyin"] {
+  line-height: 2.1;
+}
+
+.instant-text-show ruby {
+  ruby-align: center;
+}
+
+.instant-text-show rt {
+  font-size: 0.42em;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+@keyframes instant-kick {
+  30% {
+    transform: translateY(3px) scale(0.985);
+  }
+}
+
+@keyframes instant-eject {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes instant-dim {
+  from {
+    background-color: transparent;
+  }
+}
+
+@keyframes instant-flash {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes instant-develop-film {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes instant-develop-picture {
+  from {
+    filter: sepia(0.8) contrast(0.6) brightness(1.2);
+  }
+  to {
+    filter: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .instant-layout.is-managing {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .instant-scene {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .instant-pile {
+    max-height: none;
+  }
+}
