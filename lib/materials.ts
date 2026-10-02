@@ -2,6 +2,7 @@
 // Files can be several MB, so they live in IndexedDB instead of localStorage.
 
 import { useEffect, useSyncExternalStore } from "react";
+import { objectStore } from "./idb";
 
 export type MaterialKind = "pdf" | "image";
 
@@ -36,30 +37,7 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-// ---------- IndexedDB ----------
-
-let dbPromise: Promise<IDBDatabase> | null = null;
-
-function openDb(): Promise<IDBDatabase> {
-  dbPromise ??= new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: "id" });
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-  return dbPromise;
-}
-
-async function run<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, mode);
-    const req = fn(tx.objectStore(STORE));
-    tx.oncomplete = () => resolve(req.result);
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
-}
+const run = objectStore(DB_NAME, STORE);
 
 const toMaterial = (r: MaterialRecord): Material => ({
   id: r.id,

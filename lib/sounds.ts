@@ -212,6 +212,49 @@ export function playDing() {
   });
 }
 
+// 立可拍: the shutter's click-clack, then the motor whirring the photo out until `seconds`.
+// Ignores the games' mute switch; the camera page has its own.
+export function playCamera(seconds: number) {
+  const ac = audio();
+  const t = ac.currentTime;
+  const click = noiseBuffer(ac, 0.05);
+  [3200, 2200].forEach((freq, i) => {
+    const at = t + i * 0.07;
+    const src = ac.createBufferSource();
+    src.buffer = click;
+    const band = ac.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.value = freq;
+    band.Q.value = 1.5;
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.9, at);
+    gain.gain.exponentialRampToValueAtTime(0.001, at + 0.05);
+    src.connect(band).connect(gain).connect(ac.destination);
+    src.start(at);
+  });
+
+  // The motor: a muffled buzz that spins up, runs, and winds down as the photo comes out.
+  const start = t + 0.2;
+  const end = t + seconds;
+  const motor = ac.createOscillator();
+  motor.type = "sawtooth";
+  motor.frequency.setValueAtTime(80, start);
+  motor.frequency.linearRampToValueAtTime(120, start + 0.15);
+  motor.frequency.setValueAtTime(120, end - 0.2);
+  motor.frequency.linearRampToValueAtTime(70, end);
+  const low = ac.createBiquadFilter();
+  low.type = "lowpass";
+  low.frequency.value = 900;
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(0.25, start + 0.08);
+  gain.gain.setValueAtTime(0.25, end - 0.15);
+  gain.gain.linearRampToValueAtTime(0, end);
+  motor.connect(low).connect(gain).connect(ac.destination);
+  motor.start(start);
+  motor.stop(end);
+}
+
 // Any sound file or URL, e.g. the teacher's picks for 開禮物. Ignores the games' mute switch; the page has its own.
 export function playSoundFile(src: string) {
   const a = fileAudio(src);

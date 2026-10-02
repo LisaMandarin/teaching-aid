@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { clearPhotos } from "@/lib/camera";
 import { LINE_QR, LINE_URL } from "@/lib/line";
 import { selectMaterial, useMaterials } from "@/lib/materials";
 
@@ -13,15 +14,28 @@ const games = [
   { href: "/read-aloud", name: "Read Aloud 唸課文" },
   { href: "/fill-blank", name: "Fill in the Blanks 填空" },
   { href: "/quick-check", name: "Quick Check 快判卡" },
+  { href: "/instant-camera", name: "Instant Camera 立可拍" },
 ];
 
-// Everything a teacher sets up for one class; sounds, fonts and uploaded materials stay.
-const CLASS_DATA_KEYS = ["tictactoe-setup", "gifts-setup", "read-aloud", "fill-blank", "quick-check", "draw-list", "rewards-roster"];
+// Everything a teacher sets up for one class (and 立可拍's photos); sounds, fonts and uploaded materials stay.
+const CLASS_DATA_KEYS = [
+  "tictactoe-setup",
+  "gifts-setup",
+  "read-aloud",
+  "fill-blank",
+  "quick-check",
+  "instant-camera",
+  "draw-list",
+  "rewards-roster",
+];
 
-function clearClassData() {
-  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空的內容，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
+async function clearClassData() {
+  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空、快判卡的內容，立可拍的照片和文字，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
   try {
     CLASS_DATA_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch {}
+  try {
+    await clearPhotos();
   } catch {}
   // Every game is kept mounted, so reload to make them all start empty.
   location.reload();
