@@ -292,6 +292,21 @@ export function playReelStop() {
   osc.stop(t + 0.15);
 }
 
+// 剪刀石頭布: a soft tap each time the hands change. Ignores the games' mute switch; the page has its own.
+export function playHandTick() {
+  const ac = audio();
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  osc.type = "square";
+  osc.frequency.value = 660 + Math.random() * 120;
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.08, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t);
+  osc.stop(t + 0.04);
+}
+
 // Any sound file or URL, e.g. the teacher's picks for 開禮物. Ignores the games' mute switch; the page has its own.
 export function playSoundFile(src: string) {
   const a = fileAudio(src);

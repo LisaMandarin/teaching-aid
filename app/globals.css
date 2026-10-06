@@ -3790,3 +3790,185 @@ label.btn {
     padding: 3px 6px;
   }
 }
+
+/* ---------- 剪刀石頭布 ---------- */
+.rps-board {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Team | VS | Team */
+.rps-arena {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.rps-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  transition: opacity 0.2s;
+}
+
+.rps-team.is-loser {
+  opacity: 0.5;
+}
+
+.rps-name {
+  max-width: 100%;
+  color: var(--team-color);
+  font-size: clamp(24px, 3vw, 34px);
+  cursor: text;
+}
+
+/* 注音 fonts ship in one weight; a synthesized bold smears the small 注音 marks. */
+.rps-name[data-font^="bpmf"],
+.rps-name[data-font="zhuyin-only"] {
+  font-weight: 400;
+}
+
+.rps-name[data-font="hans-pinyin"] {
+  line-height: 2;
+}
+
+/* The hand, in a chalk circle of the team's color. Only the winner's is clickable. */
+.rps-hand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(140px, 30vh, 280px);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 5px solid var(--team-color);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  font: inherit;
+  /* Not the browser's grey for a disabled button, which also dims the emoji. */
+  color: var(--chalk);
+  cursor: default;
+}
+
+.rps-team.is-winner .rps-hand {
+  cursor: pointer;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--team-color) 35%, transparent), 0 0 32px var(--team-color);
+  animation: rps-glow 1.2s ease-in-out infinite alternate;
+}
+
+.rps-team.is-winner .rps-hand:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rps-hand:focus-visible {
+  outline: 3px solid var(--chalk-yellow);
+  outline-offset: 4px;
+}
+
+.rps-emoji {
+  display: block;
+  font-size: clamp(72px, 16vh, 150px);
+  line-height: 1;
+}
+
+/* The two hands face each other. */
+.rps-team.team-1 .rps-emoji {
+  scale: -1 1;
+}
+
+.rps-emoji.is-shuffling {
+  animation: rps-shake 0.18s ease-in-out infinite alternate;
+}
+
+.rps-emoji.is-landed {
+  animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rps-hand-name {
+  margin: 0;
+  min-height: 1.3em;
+  font-family: var(--font-chalk);
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 700;
+  color: var(--chalk);
+}
+
+.rps-score {
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 26px;
+  color: var(--chalk-yellow);
+}
+
+.rps-cheer-hint {
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 22px;
+  color: var(--chalk-yellow);
+  animation: rps-bob 0.8s ease-in-out infinite alternate;
+}
+
+.rps-vs {
+  font-family: var(--font-chalk);
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 700;
+  color: var(--chalk-dim);
+}
+
+.rps-go {
+  min-width: 200px;
+  justify-content: center;
+}
+
+.rps-hint {
+  margin: 0;
+  font-size: 15px;
+  color: var(--chalk-dim);
+}
+
+@keyframes rps-shake {
+  from {
+    transform: rotate(-8deg) translateY(-4px);
+  }
+  to {
+    transform: rotate(8deg) translateY(4px);
+  }
+}
+
+@keyframes rps-glow {
+  to {
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--team-color) 20%, transparent), 0 0 48px var(--team-color);
+  }
+}
+
+@keyframes rps-bob {
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rps-emoji.is-shuffling,
+  .rps-team.is-winner .rps-hand,
+  .rps-cheer-hint {
+    animation: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .rps-arena {
+    gap: 6px;
+  }
+
+  .rps-hand {
+    width: 120px;
+    border-width: 4px;
+  }
+
+  .rps-emoji {
+    font-size: 64px;
+  }
+}
