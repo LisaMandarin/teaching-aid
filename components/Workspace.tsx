@@ -12,6 +12,7 @@ import NameDraw from "./NameDraw";
 import QuickCheck from "./QuickCheck";
 import ReadAloud from "./ReadAloud";
 import Rewards from "./Rewards";
+import RockPaperScissors from "./RockPaperScissors";
 import SlotMachine from "./SlotMachine";
 import TicTacToe from "./TicTacToe";
 
@@ -24,6 +25,7 @@ const views = [
   { href: "/quick-check", fill: true, render: () => <QuickCheck /> },
   { href: "/instant-camera", fill: true, render: () => <InstantCamera /> },
   { href: "/slot-machine", fill: true, render: () => <SlotMachine /> },
+  { href: "/rock-paper-scissors", fill: true, render: () => <RockPaperScissors /> },
   { href: "/materials", fill: true, render: () => <Materials /> },
   { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
   { href: "/rewards", fill: true, render: () => <Rewards /> },
