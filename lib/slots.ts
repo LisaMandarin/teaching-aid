@@ -1,4 +1,4 @@
-// 拉霸機: 2–5 reels, each with 2–5 pictures or words, imported from Excel.
+// 拉霸機: 2–5 reels, each with 2–10 pictures or words, imported from Excel.
 
 import { listRef, saveWorkbook } from "./excel";
 import { FONTS, type FontId, fontFromSetting } from "./fonts";
@@ -8,7 +8,7 @@ import { applyReadings, loadPolyphones } from "./zhuyin";
 export const MIN_REELS = 2;
 export const MAX_REELS = 5;
 export const MIN_CELLS = 2;
-export const MAX_CELLS = 5;
+export const MAX_CELLS = 10;
 
 // `title` is written above the reel, e.g. 誰／在哪裡／做什麼; blank shows nothing.
 export type Reel = { title: string; cells: Cell[] };
