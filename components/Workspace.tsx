@@ -12,6 +12,7 @@ import NameDraw from "./NameDraw";
 import QuickCheck from "./QuickCheck";
 import ReadAloud from "./ReadAloud";
 import Rewards from "./Rewards";
+import SlotMachine from "./SlotMachine";
 import TicTacToe from "./TicTacToe";
 
 const views = [
@@ -22,6 +23,7 @@ const views = [
   { href: "/fill-blank", fill: true, render: () => <FillBlank /> },
   { href: "/quick-check", fill: true, render: () => <QuickCheck /> },
   { href: "/instant-camera", fill: true, render: () => <InstantCamera /> },
+  { href: "/slot-machine", fill: true, render: () => <SlotMachine /> },
   { href: "/materials", fill: true, render: () => <Materials /> },
   { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
   { href: "/rewards", fill: true, render: () => <Rewards /> },

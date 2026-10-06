@@ -76,6 +76,18 @@
   --photo-frame: #fbf9f2;          /* 照片的白框 */
   --film-dark: #2b2620;            /* 還沒顯影的底片 */
 
+  /* 拉霸機 */
+  --slot-body: #c8423a;
+  --slot-body-dark: #8e2f29;
+  --slot-trim: #e0a93a;            /* 金色邊框、拉桿底座 */
+  --slot-trim-dark: #a87a22;
+  --slot-panel: #2b2620;           /* 轉輪後面的深色面板 */
+  --slot-reel: #fffdf5;            /* 轉輪 */
+  --slot-bulb: #fde68a;
+  --slot-bulb-off: #a8742a;
+  --slot-lever: #c9ccd1;           /* 拉桿 */
+  --slot-knob: #d8544a;
+
   /* 筆記紙上的記號（抽籤名單） */
   --paper-rule: rgba(110, 150, 200, 0.3);   /* 每一行底下的藍線 */
   --paper-margin: rgba(214, 90, 80, 0.5);  /* 左邊的紅色邊線 */

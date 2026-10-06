@@ -255,6 +255,43 @@ export function playCamera(seconds: number) {
   motor.stop(end);
 }
 
+// 拉霸機: the lever's ratchet, then the reels clicking past until `seconds`, slowing down at the end.
+// Ignores the games' mute switch; the slot machine page has its own.
+export function playSlotSpin(seconds: number) {
+  const ac = audio();
+  const t = ac.currentTime;
+  const click = noiseBuffer(ac, 0.02);
+  for (let at = 0.05, gap = 0.05; at < seconds; at += gap, gap = at > seconds - 0.8 ? gap * 1.12 : 0.05) {
+    const src = ac.createBufferSource();
+    src.buffer = click;
+    const band = ac.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.value = 2400;
+    band.Q.value = 6;
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.35, t + at);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + at + 0.02);
+    src.connect(band).connect(gain).connect(ac.destination);
+    src.start(t + at);
+  }
+}
+
+// 拉霸機: a reel clunking to a stop.
+export function playReelStop() {
+  const ac = audio();
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(220, t);
+  osc.frequency.exponentialRampToValueAtTime(90, t + 0.12);
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.6, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t);
+  osc.stop(t + 0.15);
+}
+
 // Any sound file or URL, e.g. the teacher's picks for 開禮物. Ignores the games' mute switch; the page has its own.
 export function playSoundFile(src: string) {
   const a = fileAudio(src);
