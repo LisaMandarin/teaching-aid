@@ -15,6 +15,7 @@ const games = [
   { href: "/fill-blank", name: "Fill in the Blanks 填空" },
   { href: "/quick-check", name: "Quick Check 快判卡" },
   { href: "/instant-camera", name: "Instant Camera 立可拍" },
+  { href: "/slot-machine", name: "Slot Machine 拉霸機" },
 ];
 
 // Everything a teacher sets up for one class (and 立可拍's photos); sounds, fonts and uploaded materials stay.
@@ -25,12 +26,13 @@ const CLASS_DATA_KEYS = [
   "fill-blank",
   "quick-check",
   "instant-camera",
+  "slot-machine",
   "draw-list",
   "rewards-roster",
 ];
 
 async function clearClassData() {
-  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空、快判卡的內容，立可拍的照片和文字，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
+  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空、快判卡、拉霸機的內容，立可拍的照片和文字，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
   try {
     CLASS_DATA_KEYS.forEach((key) => localStorage.removeItem(key));
   } catch {}

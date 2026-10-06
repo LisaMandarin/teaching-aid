@@ -3530,3 +3530,263 @@ label.btn {
     max-height: none;
   }
 }
+
+/* ---------- 拉霸機 ---------- */
+.slots-stage {
+  flex: 1;
+  justify-content: center;
+}
+
+/* The cabinet, with the lever sticking out of its right side. */
+.slot-machine {
+  display: flex;
+  align-items: center;
+  width: min(100%, calc(var(--reels) * 190px + 110px));
+}
+
+.slot-cabinet {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px 18px;
+  background: linear-gradient(var(--slot-body), var(--slot-body-dark));
+  border: 6px solid var(--slot-trim);
+  border-radius: 28px 28px 14px 14px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+}
+
+.slot-marquee {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--slot-panel);
+  border: 3px solid var(--slot-trim);
+  border-radius: 14px;
+}
+
+.slot-name {
+  font-family: var(--font-chalk);
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--slot-bulb);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--slot-bulb) 70%, transparent);
+  white-space: nowrap;
+}
+
+/* A row of bulbs, every other one lit; while the reels spin the lit ones chase along. */
+.slot-lights {
+  flex: 1;
+  height: 12px;
+  background:
+    radial-gradient(circle at 9px 50%, var(--slot-bulb) 0 4px, transparent 5px),
+    radial-gradient(circle at 27px 50%, var(--slot-bulb-off) 0 4px, transparent 5px);
+  background-size: 36px 12px;
+  background-repeat: repeat-x;
+}
+
+.slot-cabinet.is-spinning .slot-lights {
+  animation: slot-chase 0.35s steps(1) infinite;
+}
+
+/* All the bulbs blink when the last reel stops; matches FLASH_MS in SlotMachine.tsx. */
+.slot-cabinet.is-flashing .slot-lights {
+  background:
+    radial-gradient(circle at 9px 50%, var(--slot-bulb) 0 4px, transparent 5px),
+    radial-gradient(circle at 27px 50%, var(--slot-bulb) 0 4px, transparent 5px);
+  background-size: 36px 12px;
+  background-repeat: repeat-x;
+  animation: slot-blink 0.25s 6 alternate;
+}
+
+.slot-reels {
+  display: grid;
+  grid-template-columns: repeat(var(--reels), minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  background: var(--slot-panel);
+  border-radius: 12px;
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.6);
+}
+
+.slot-reel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 誰／在哪裡／做什麼 above the reel, in the teacher's font. */
+.slot-title {
+  min-height: 1.2em;
+  font-size: clamp(16px, 2vw, 26px);
+  color: var(--slot-bulb);
+}
+
+.slot-window {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--slot-reel);
+  border-radius: 8px;
+}
+
+/* Shading at the top and bottom, so the reel looks round. */
+.slot-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.35), transparent 20%, transparent 80%, rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+
+.slot-reel:has(.slot-hold.is-held) .slot-window {
+  outline: 4px solid var(--slot-trim);
+  outline-offset: 2px;
+}
+
+/* One cell per window height; translateY(-100%) moves the strip by one cell. */
+.slot-strip {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.slot-window.is-spinning .slot-strip {
+  filter: blur(0.8px);
+}
+
+.slot-cell {
+  flex: 0 0 100%;
+  container-type: size;
+  display: flex;
+  padding: 8%;
+  color: var(--ink);
+}
+
+.slot-hold {
+  align-self: center;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--chalk);
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--slot-trim);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.slot-hold.is-held {
+  font-weight: 700;
+  color: var(--slot-panel);
+  background: var(--slot-trim);
+}
+
+.slot-hold:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.slot-lever {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 240px;
+  margin-left: -6px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.slot-lever:disabled {
+  cursor: default;
+}
+
+.slot-lever-base {
+  position: absolute;
+  left: 0;
+  bottom: 70px;
+  width: 28px;
+  height: 60px;
+  background: linear-gradient(90deg, var(--slot-trim-dark), var(--slot-trim));
+  border-radius: 0 10px 10px 0;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Pivots at the base; flipping it upside down (scaleY < 0) swings the knob down past the base. */
+.slot-lever-arm {
+  position: absolute;
+  left: 13px;
+  bottom: 100px;
+  width: 10px;
+  height: 110px;
+  background: linear-gradient(90deg, var(--slot-trim-dark), var(--slot-lever), var(--slot-trim-dark));
+  border-radius: 5px;
+  transform-origin: 50% 100%;
+  transition: transform 0.15s;
+}
+
+.slot-lever:hover:not(:disabled) .slot-lever-arm {
+  transform: scaleY(0.92);
+}
+
+.slot-lever-arm.is-pulled {
+  animation: slot-pull 0.9s ease-in-out;
+}
+
+.slot-lever-knob {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  translate: -50% 0;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.6), transparent 40%), var(--slot-knob);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes slot-pull {
+  35%,
+  55% {
+    transform: scaleY(-0.7);
+  }
+}
+
+@keyframes slot-chase {
+  50%,
+  100% {
+    background-position: 18px 0;
+  }
+}
+
+@keyframes slot-blink {
+  to {
+    opacity: 0.25;
+  }
+}
+
+@media (max-width: 600px) {
+  .slot-cabinet {
+    padding: 10px;
+  }
+
+  .slot-reels {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .slot-lever {
+    width: 44px;
+    height: 200px;
+  }
+
+  .slot-hold {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+}
