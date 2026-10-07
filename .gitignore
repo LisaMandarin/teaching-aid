@@ -41,3 +41,6 @@ next-env.d.ts
 /.claude/skills/prototype
 /.claude/skills/setup-matt-pocock-skills
 /.claude/skills/tdd
+
+# Claude Code personal settings
+.claude/settings.local.json
