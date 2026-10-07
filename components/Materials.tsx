@@ -9,6 +9,8 @@ export default function Materials() {
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The file name and 刪除 are rarely needed, so they stay tucked away to leave room for the material.
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const selected = items.find((m) => m.id === selectedId) ?? null;
 
@@ -62,15 +64,32 @@ export default function Materials() {
 
       {selected ? (
         <>
-          <header className="page-header">
-            <h1 className="page-title materials-title" title={selected.name}>
-              {selected.name}
-            </h1>
-            <div className="page-tools">
-              <button className="btn-tag" onClick={() => void remove()}>
-                🗑️ 刪除
-              </button>
-            </div>
+          <header className={`page-header materials-header ${infoOpen ? "" : "is-collapsed"}`}>
+            <button
+              type="button"
+              className="materials-info-toggle"
+              onClick={() => setInfoOpen((o) => !o)}
+              aria-expanded={infoOpen}
+              aria-label={infoOpen ? "收起檔案資訊" : "展開檔案資訊"}
+              title={infoOpen ? "收起檔案資訊" : "展開檔案資訊"}
+            >
+              <span className={`sidebar-title-arrow ${infoOpen ? "is-open" : ""}`} aria-hidden="true">
+                ▾
+              </span>
+              {!infoOpen && <span className="materials-info-label">檔案資訊</span>}
+            </button>
+            {infoOpen && (
+              <>
+                <h1 className="page-title materials-title" title={selected.name}>
+                  {selected.name}
+                </h1>
+                <div className="page-tools">
+                  <button className="btn-tag" onClick={() => void remove()}>
+                    🗑️ 刪除
+                  </button>
+                </div>
+              </>
+            )}
           </header>
           <div className="materials-viewer">
             {selected.kind === "pdf" ? (

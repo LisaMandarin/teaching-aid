@@ -1063,6 +1063,35 @@ label.btn {
   text-overflow: ellipsis;
 }
 
+/* 檔案資訊 (file name + 刪除) folds into a small tab so the material gets the space. */
+.materials-header {
+  flex-wrap: nowrap;
+}
+
+.materials-header.is-collapsed {
+  margin-bottom: -10px;
+}
+
+.materials-info-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(60, 35, 10, 0.2);
+}
+
+.materials-info-toggle:hover {
+  color: inherit;
+}
+
 .materials-viewer {
   display: flex;
   align-items: center;
