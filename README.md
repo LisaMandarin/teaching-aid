@@ -4,6 +4,8 @@
 
 A website that helps language teachers teach through games.
 
+程式架構與檔案導覽請見 [Codebase 結構](CODEBASE.md)。
+
 ## 功能
 
 使用 Next.js（App Router）。左邊側欄是軟木布告欄，分成遊戲、教材、工具三區；上課時可以在各頁之間切換，遊戲進度不會中斷。
