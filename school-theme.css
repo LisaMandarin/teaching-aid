@@ -95,6 +95,10 @@
   --card-red: #c8423a;
   --card-back-0: #c8423a;          /* 第一副的牌背 */
   --card-back-1: #3f6fae;          /* 第二副的牌背 */
+  --card-back-stripe: rgba(255, 255, 255, 0.22);  /* 牌背的格紋 */
+  --card-shadow: rgba(0, 0, 0, 0.35);             /* 牌在黑板上的影子 */
+  --card-stack-shadow: rgba(0, 0, 0, 0.25);       /* 牌堆底下的影子 */
+  --chalk-press: rgba(255, 255, 255, 0.12);       /* 黑板上按住按鈕時的底色 */
 
   /* 筆記紙上的記號（抽籤名單） */
   --paper-rule: rgba(110, 150, 200, 0.3);   /* 每一行底下的藍線 */

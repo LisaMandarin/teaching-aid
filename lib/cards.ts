@@ -101,7 +101,8 @@ export async function parseCards(file: File): Promise<ParsedCards> {
   const rows = (dataSheet?.data ?? []).filter((row) => row.some((v) => cellText(v) !== ""));
 
   const header = rows[0]?.map(cellText) ?? [];
-  const col = (name: string) => header.findIndex((h) => h.includes(name));
+  // Exact names, so a first card like 第一副／文字遊戲 isn't taken for the header.
+  const col = (name: string) => header.indexOf(name);
   const hasHeader = col("副") !== -1 || col("文字") !== -1 || col("圖片") !== -1;
   const cols = hasHeader ? { deck: col("副"), text: col("文字"), image: col("圖片") } : { deck: 0, text: 1, image: 2 };
   const at = (row: unknown[], i: number) => (i === -1 ? "" : cellText(row[i]));

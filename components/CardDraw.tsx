@@ -143,6 +143,8 @@ export default function CardDraw() {
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
   const timers = useRef<number[]>([]);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
 
   useEffect(() => {
     let saved: { setup?: CardSetup; decks?: unknown; faceDown?: unknown } | null = null;
@@ -182,6 +184,19 @@ export default function CardDraw() {
       localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
     } catch {}
   }, [muted, loaded]);
+
+  // A held-down 偷看 whose key or button is let go in another window never hears about it.
+  useEffect(() => {
+    if (peeking === null) return;
+    const stop = () => setPeeking(null);
+    const hidden = () => document.hidden && stop();
+    window.addEventListener("blur", stop);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("blur", stop);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, [peeking]);
 
   const updateDeck = (i: number, change: (d: Deck) => Deck) => setDecks((ds) => ds.map((d, j) => (j === i ? change(d) : d)));
 
@@ -228,6 +243,9 @@ export default function CardDraw() {
 
   // New cards mean new decks: every deck starts over, shuffled.
   const startWith = (next: CardSetup, deckCount: number) => {
+    // A shuffle still under way would deal out the old cards when it finishes.
+    timers.current.splice(0).forEach(clearTimeout);
+    setShuffling([]);
     setSetup(next);
     setPeeking(null);
     setDecks(Array.from({ length: deckCount }, (_, i) => newDeck(sizeOf(next, i))));
@@ -245,29 +263,40 @@ export default function CardDraw() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseCards(file);
+      if (run !== importRun.current) return;
       if (parsed.error) setNotice({ lines: [], warnings: [parsed.error, ...parsed.warnings] });
       else if (parsed.localNames.length > 0) setPendingImport(parsed);
       else applyImport(parsed, []);
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
     const lessons: ParsedWorkbook["lessons"] = pendingImport.setup.decks.flatMap((d, i) =>
       d ? [{ name: DECK_NAMES[i], items: d }] : [],
     );
     const missing = await attachLocalImages(lessons, files);
+    if (run !== importRun.current) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
   };
 
   const backToPoker = () => {
@@ -484,10 +513,18 @@ export default function CardDraw() {
                 }}
               />
             </label>
-            <button className="btn" onClick={() => applyImport(pendingImport, pendingImport.localNames)}>
+            <button
+              className="btn"
+              onClick={() => {
+                // Pictures still loading from an earlier pick are no longer wanted.
+                importRun.current++;
+                setImporting(false);
+                applyImport(pendingImport, pendingImport.localNames);
+              }}
+            >
               略過圖片
             </button>
-            <button className="btn" onClick={() => setPendingImport(null)}>
+            <button className="btn" onClick={cancelImport}>
               取消匯入
             </button>
           </div>

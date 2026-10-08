@@ -4006,10 +4006,13 @@ label.btn {
 .card-board {
   flex: 1;
   justify-content: center;
+  /* The decks are sized and laid out by the board's width, which the sidebar changes. */
+  container-type: inline-size;
 }
 
+/* A deck needs room for the pile, the gap and the drawn card (1.15×): about 2.3 card widths plus the gap. */
 .card-decks {
-  --card-w: clamp(120px, 22vh, 220px);
+  --card-w: min(clamp(120px, 22vh, 220px), (100cqw - 100px) / 2.3);
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
@@ -4017,7 +4020,7 @@ label.btn {
 }
 
 .card-decks.is-2 {
-  --card-w: clamp(90px, 17vh, 170px);
+  --card-w: min(clamp(90px, 17vh, 170px), (50cqw - 100px) / 2.3);
   grid-template-columns: 1fr 1fr;
 }
 
@@ -4086,7 +4089,7 @@ label.btn {
   inset: 0;
   box-shadow:
     calc(var(--stack) * 1px) calc(var(--stack) * 1px) 0 var(--card-edge),
-    calc(var(--stack) * 2px) calc(var(--stack) * 2px) 0 rgba(0, 0, 0, 0.25);
+    calc(var(--stack) * 2px) calc(var(--stack) * 2px) 0 var(--card-stack-shadow);
 }
 
 .card-pile:not(:disabled):hover > .pcard-back {
@@ -4179,7 +4182,7 @@ label.btn {
   display: block;
   border-radius: calc(var(--card-w) * 0.07);
   backface-visibility: hidden;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 14px var(--card-shadow);
 }
 
 .pcard-face,
@@ -4236,8 +4239,8 @@ label.btn {
 .pcard-back {
   border: calc(var(--card-w) * 0.05) solid var(--card-face);
   background:
-    repeating-linear-gradient(45deg, transparent 0 6px, rgba(255, 255, 255, 0.22) 6px 8px),
-    repeating-linear-gradient(-45deg, transparent 0 6px, rgba(255, 255, 255, 0.22) 6px 8px),
+    repeating-linear-gradient(45deg, transparent 0 6px, var(--card-back-stripe) 6px 8px),
+    repeating-linear-gradient(-45deg, transparent 0 6px, var(--card-back-stripe) 6px 8px),
     var(--card-back);
 }
 
@@ -4259,7 +4262,7 @@ label.btn {
 }
 
 .card-peek:active {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--chalk-press);
 }
 
 /* The cards drawn so far, written small in chalk. */
@@ -4339,8 +4342,10 @@ label.btn {
   }
 }
 
-@media (max-width: 700px) {
+/* Too narrow for two decks side by side: one above the other, each as wide as a single deck. */
+@container (max-width: 760px) {
   .card-decks.is-2 {
+    --card-w: min(clamp(90px, 17vh, 170px), (100cqw - 100px) / 2.3);
     grid-template-columns: 1fr;
   }
 }
