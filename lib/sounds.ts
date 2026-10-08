@@ -315,3 +315,41 @@ export function playSoundFile(src: string) {
 }
 
 export const preloadSoundFile = (src: string) => fileAudio(src).load();
+
+// 抽牌: the riffle of a shuffle, a quick patter of paper snaps. Ignores the games' mute switch; the page has its own.
+export function playCardShuffle(seconds: number) {
+  const ac = audio();
+  const t = ac.currentTime;
+  const snap = noiseBuffer(ac, 0.015);
+  for (let at = 0; at < seconds; at += 0.012 + Math.random() * 0.014) {
+    const src = ac.createBufferSource();
+    src.buffer = snap;
+    const high = ac.createBiquadFilter();
+    high.type = "highpass";
+    high.frequency.value = 2500 + Math.random() * 2000;
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.15 + Math.random() * 0.15, t + at);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + at + 0.015);
+    src.connect(high).connect(gain).connect(ac.destination);
+    src.start(t + at);
+  }
+}
+
+// 抽牌: a card sliding off the deck or flipping over, a short swish.
+export function playCardFlick() {
+  const ac = audio();
+  const t = ac.currentTime;
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuffer(ac, 0.12);
+  const band = ac.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.setValueAtTime(1800, t);
+  band.frequency.exponentialRampToValueAtTime(5000, t + 0.1);
+  band.Q.value = 1.2;
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.5, t + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+  src.connect(band).connect(gain).connect(ac.destination);
+  src.start(t);
+}

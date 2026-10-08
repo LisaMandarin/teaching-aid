@@ -88,6 +88,14 @@
   --slot-lever: #c9ccd1;           /* 拉桿 */
   --slot-knob: #d8544a;
 
+  /* 抽牌（撲克牌） */
+  --card-face: #fffdf5;
+  --card-edge: #cbbd9c;
+  --card-black: #2a2a28;
+  --card-red: #c8423a;
+  --card-back-0: #c8423a;          /* 第一副的牌背 */
+  --card-back-1: #3f6fae;          /* 第二副的牌背 */
+
   /* 筆記紙上的記號（抽籤名單） */
   --paper-rule: rgba(110, 150, 200, 0.3);   /* 每一行底下的藍線 */
   --paper-margin: rgba(214, 90, 80, 0.5);  /* 左邊的紅色邊線 */

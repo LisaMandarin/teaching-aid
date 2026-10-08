@@ -10,7 +10,7 @@
 | --- | --- |
 | 框架 | `package.json` 宣告 Next.js `^16.3.6`、React／React DOM `^19.3.0` |
 | 語言 | TypeScript，啟用 `strict`；`@/*` 對應專案根目錄 |
-| 路由 | `app/`，共 13 個功能路由 |
+| 路由 | `app/`，共 14 個功能路由 |
 | 畫面與互動 | `components/`；各功能主要使用 React hooks 管理狀態 |
 | 邏輯與資料處理 | `lib/`，包含檔案解析、文字轉換、儲存、音效等 |
 | 資料保存 | localStorage 存設定與部分進度；IndexedDB 存教材、照片 |
@@ -25,7 +25,7 @@ teaching-aid/
 │   ├── layout.tsx           # 字型、metadata、Sidebar、Workspace、WelcomeDialog
 │   ├── page.tsx             # /，對應吊人遊戲
 │   ├── globals.css          # 全站布局、各功能樣式與動畫
-│   └── <功能>/page.tsx      # 其餘 12 個功能路由
+│   └── <功能>/page.tsx      # 其餘 13 個功能路由
 ├── components/              # 功能畫面與共用 UI
 │   ├── Workspace.tsx        # 路徑對應畫面、保留已開啟的功能
 │   ├── Sidebar.tsx          # 導覽、教材清單、清除遊戲設定
@@ -88,6 +88,7 @@ app/layout.tsx
 | `/instant-camera` | 立可拍 | `InstantCamera.tsx` | `camera.ts`：照片匯入、縮圖與儲存 |
 | `/slot-machine` | 拉霸機 | `SlotMachine.tsx` | `slots.ts`：轉輪資料、設定、範本與匯入 |
 | `/rock-paper-scissors` | 剪刀石頭布 | `RockPaperScissors.tsx` | 對戰與計分在元件內；`sounds.ts` |
+| `/cards` | 抽牌 | `CardDraw.tsx` | `cards.ts`：自訂卡片 Excel 解析與範本；牌堆、洗牌與開牌狀態在元件內；`sounds.ts` |
 | `/materials` | 教材 | `Materials.tsx` | `materials.ts`：教材清單、選取、增刪與儲存 |
 | `/rewards` | 我的獎勵 | `Rewards.tsx` | `rewards.ts`：學生名單與金幣紀錄匯入／匯出 |
 | `/draw` | 抽籤筒 | `NameDraw.tsx` | `draw.ts`：學生名單解析與範本 |
@@ -100,6 +101,7 @@ app/layout.tsx
 | `lessons.ts` | `Cell`、`Lesson` 題庫模型；圈圈叉叉／快判卡 Excel 匯入與範本；洗牌、抽題、本機圖片配對及 Dropbox／Drive 圖片網址處理 |
 | `gifts.ts` | 禮物、盒面與顏色設定，Excel 解析和範本 |
 | `slots.ts` | 轉輪資料與限制、Excel 解析和範本 |
+| `cards.ts` | 抽牌自訂卡片（每副文字／圖片）、Excel 解析和範本 |
 | `draw.ts` | 抽籤名單 Excel 解析與範本 |
 | `rewards.ts` | 學生及金幣資料模型、Excel 解析、紀錄匯出與範本 |
 | `readAloud.ts` | `Run` 課文模型、文字範圍／字型修改、分行、DOCX 解析，以及螢光筆／底線標記轉換 |
@@ -144,7 +146,7 @@ PDF／教材圖片 → materials → IndexedDB → Blob URL → 教材畫面
 | IndexedDB：`teaching-aid`／`materials` | 教材 PDF／圖片 Blob 與檔案資訊 | `materials.ts`、`idb.ts` |
 | IndexedDB：`teaching-aid-camera`／`photos` | 立可拍照片 Blob、尺寸及匯入順序 | `camera.ts`、`idb.ts` |
 
-課堂資料的主要 localStorage keys 是 `tictactoe-setup`、`gifts-setup`、`read-aloud`、`fill-blank`、`quick-check`、`instant-camera`、`slot-machine`、`rock-paper-scissors`、`draw-list`、`rewards-roster`。
+課堂資料的主要 localStorage keys 是 `tictactoe-setup`、`gifts-setup`、`read-aloud`、`fill-blank`、`quick-check`、`instant-camera`、`slot-machine`、`rock-paper-scissors`、`card-draw`、`draw-list`、`rewards-roster`。
 
 「清除所有遊戲設定」由 `Sidebar.tsx` 的 `CLASS_DATA_KEYS` 與 `clearClassData()` 管理：移除指定 keys、清除立可拍照片，再重新整理頁面。教材、獨立存放的靜音及字型偏好會保留。新增需要一起清除的課堂資料時，需同步更新這裡。
 
