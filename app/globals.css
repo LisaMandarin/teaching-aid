@@ -4001,3 +4001,351 @@ label.btn {
     font-size: 64px;
   }
 }
+
+/* ---------- 抽牌 ---------- */
+.card-board {
+  flex: 1;
+  justify-content: center;
+  /* The decks are sized and laid out by the board's width, which the sidebar changes. */
+  container-type: inline-size;
+}
+
+/* A deck needs room for the pile, the gap and the drawn card (1.15×): about 2.3 card widths plus the gap. */
+.card-decks {
+  --card-w: min(clamp(120px, 22vh, 220px), (100cqw - 100px) / 2.3);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+}
+
+.card-decks.is-2 {
+  --card-w: min(clamp(90px, 17vh, 170px), (50cqw - 100px) / 2.3);
+  grid-template-columns: 1fr 1fr;
+}
+
+.card-deck {
+  --card-back: var(--card-back-0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.card-deck.deck-1 {
+  --card-back: var(--card-back-1);
+}
+
+.card-deck-name {
+  margin: 0;
+  font-family: var(--font-chalk);
+  font-size: 26px;
+  color: var(--chalk);
+}
+
+/* The deck on the left, the card just drawn on the right. */
+.card-table {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(16px, 4vw, 48px);
+}
+
+.card-pile-wrap,
+.card-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-count {
+  margin: 0;
+  min-height: 1.3em;
+  font-family: var(--font-chalk);
+  font-size: 20px;
+  color: var(--chalk-dim);
+}
+
+/* The deck: a card back with a few more peeking out underneath, fewer as it runs out. */
+.card-pile {
+  position: relative;
+  width: var(--card-w);
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--card-w) * 0.07);
+  background: transparent;
+  cursor: pointer;
+}
+
+.card-pile:disabled {
+  cursor: default;
+}
+
+.card-pile > .pcard-back {
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    calc(var(--stack) * 1px) calc(var(--stack) * 1px) 0 var(--card-edge),
+    calc(var(--stack) * 2px) calc(var(--stack) * 2px) 0 var(--card-stack-shadow);
+}
+
+.card-pile:not(:disabled):hover > .pcard-back {
+  translate: 0 -4px;
+}
+
+.card-pile:focus-visible {
+  outline: 3px solid var(--chalk-yellow);
+  outline-offset: 6px;
+}
+
+/* Shuffling: two halves riffle in and out of each other. */
+.card-pile.is-shuffling > .pcard-back {
+  animation: card-riffle-l 0.35s ease-in-out 2;
+}
+
+.card-pile.is-shuffling > .pcard-back.is-riffle {
+  animation-name: card-riffle-r;
+}
+
+.card-empty,
+.card-slot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--card-w);
+  aspect-ratio: 5 / 7;
+  border: 3px dashed var(--chalk-dim);
+  border-radius: calc(var(--card-w) * 0.07);
+  font-family: var(--font-chalk);
+  font-size: 20px;
+  color: var(--chalk-dim);
+}
+
+.card-empty {
+  height: 100%;
+}
+
+/* A playing card. The inner layer turns over between its face and its back. */
+.pcard {
+  width: calc(var(--card-w) * 1.15);
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  perspective: 1000px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pcard:disabled {
+  cursor: default;
+}
+
+.pcard:focus-visible {
+  outline: 3px solid var(--chalk-yellow);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+.pcard.is-dealt {
+  animation: card-deal 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.pcard-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateY(180deg);
+  transition: transform 0.5s ease;
+}
+
+.pcard.is-open .pcard-inner {
+  transform: none;
+}
+
+.pcard.is-peeking .pcard-inner {
+  transition-duration: 0.2s;
+}
+
+.pcard:not(:disabled):not(.is-peeking):hover .pcard-inner {
+  translate: 0 -6px;
+}
+
+.pcard-face,
+.pcard-back {
+  display: block;
+  border-radius: calc(var(--card-w) * 0.07);
+  backface-visibility: hidden;
+  box-shadow: 0 6px 14px var(--card-shadow);
+}
+
+.pcard-face,
+.pcard .pcard-back {
+  position: absolute;
+  inset: 0;
+}
+
+.pcard-face {
+  border: 1px solid var(--card-edge);
+  background: var(--card-face);
+  color: var(--card-black);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+}
+
+.pcard-face.is-red {
+  color: var(--card-red);
+}
+
+.pcard.is-peeking .pcard-face {
+  outline: 4px dashed var(--chalk-yellow);
+  outline-offset: 4px;
+}
+
+.pcard-corner {
+  position: absolute;
+  top: 6%;
+  left: 8%;
+  font-size: calc(var(--card-w) * 0.17);
+  line-height: 1;
+  text-align: center;
+}
+
+.pcard-corner.is-bottom {
+  top: auto;
+  left: auto;
+  bottom: 6%;
+  right: 8%;
+  rotate: 180deg;
+}
+
+.pcard-pip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--card-w) * 0.55);
+  line-height: 1;
+}
+
+/* The back: a white border around a criss-cross pattern in the deck's color. */
+.pcard-back {
+  border: calc(var(--card-w) * 0.05) solid var(--card-face);
+  background:
+    repeating-linear-gradient(45deg, transparent 0 6px, var(--card-back-stripe) 6px 8px),
+    repeating-linear-gradient(-45deg, transparent 0 6px, var(--card-back-stripe) 6px 8px),
+    var(--card-back);
+}
+
+.pcard .pcard-back {
+  transform: rotateY(180deg);
+}
+
+.card-controls .btn-chalk,
+.card-controls .btn-chalk-outline,
+.card-controls .btn-chalk-ghost {
+  height: 50px;
+  padding: 0 20px;
+  font-size: 20px;
+}
+
+.card-peek {
+  touch-action: none;
+  user-select: none;
+}
+
+.card-peek:active {
+  background: var(--chalk-press);
+}
+
+/* The cards drawn so far, written small in chalk. */
+.card-history {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-history li {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--card-face);
+  color: var(--card-black);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.card-history li.is-red {
+  color: var(--card-red);
+}
+
+.card-history li.is-custom {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-board-text);
+  font-weight: 400;
+}
+
+.card-history li img {
+  height: 28px;
+  max-width: 48px;
+  object-fit: contain;
+}
+
+/* An imported card: the picture and words sized to the card, as in a 圈圈叉叉 cell. */
+.pcard-face.is-custom {
+  display: flex;
+  container-type: size;
+  padding: 10%;
+  color: var(--ink);
+}
+
+@keyframes card-deal {
+  from {
+    transform: translateX(calc(var(--card-w) * -1.2)) rotate(-12deg);
+    opacity: 0.4;
+  }
+}
+
+@keyframes card-riffle-l {
+  50% {
+    transform: translateX(-30%) rotate(-8deg);
+  }
+}
+
+@keyframes card-riffle-r {
+  50% {
+    transform: translateX(30%) rotate(8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcard.is-dealt,
+  .card-pile.is-shuffling > .pcard-back {
+    animation: none;
+  }
+
+  .pcard-inner {
+    transition: none;
+  }
+}
+
+/* Too narrow for two decks side by side: one above the other, each as wide as a single deck. */
+@container (max-width: 760px) {
+  .card-decks.is-2 {
+    --card-w: min(clamp(90px, 17vh, 170px), (100cqw - 100px) / 2.3);
+    grid-template-columns: 1fr;
+  }
+}

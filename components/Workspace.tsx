@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import CardDraw from "./CardDraw";
 import FillBlank from "./FillBlank";
 import GiftBoxes from "./GiftBoxes";
 import Hangman from "./Hangman";
@@ -26,6 +27,7 @@ const views = [
   { href: "/instant-camera", fill: true, render: () => <InstantCamera /> },
   { href: "/slot-machine", fill: true, render: () => <SlotMachine /> },
   { href: "/rock-paper-scissors", fill: true, render: () => <RockPaperScissors /> },
+  { href: "/cards", fill: true, render: () => <CardDraw /> },
   { href: "/materials", fill: true, render: () => <Materials /> },
   { href: "/image-resizer", fill: true, render: () => <ImageResizer /> },
   { href: "/rewards", fill: true, render: () => <Rewards /> },
