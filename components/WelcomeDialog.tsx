@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { LINE_QR, LINE_URL } from "@/lib/line";
 
-const HIDE_KEY = "teaching-aid:hide-welcome";
+// Bumped to v2 for the trial-shutdown notice, so teachers who hid the old welcome still see it.
+const HIDE_KEY = "teaching-aid:hide-welcome-v2";
 
-// Greets teachers on arrival: the site is free but still in testing, so ask them to follow
-// the LINE account in case the address changes.
+// Greets teachers on arrival: this trial site closes on 2026-12-31, so ask them to join the LINE
+// account and leave feedback to get the official site and an activation code.
 export default function WelcomeDialog() {
   const ref = useRef<HTMLDialogElement>(null);
   const [hide, setHide] = useState(false);
@@ -27,16 +28,15 @@ export default function WelcomeDialog() {
   };
 
   return (
-    <dialog ref={ref} className="welcome lined-paper" onCancel={close}>
+    <dialog ref={ref} className="welcome lined-paper" onCancel={close} aria-labelledby="welcome-title">
       <span className="tape welcome-tape-l" aria-hidden="true" />
       <span className="tape welcome-tape-r" aria-hidden="true" />
-      <h2>歡迎使用教學便利通</h2>
+      <h2 id="welcome-title">歡迎使用教學便利通</h2>
       <p>
-        本網站目前<strong>完全免費</strong>，歡迎老師們盡情使用！
+        本網站為<strong>試用版</strong>，將於 <strong>2026 年 12 月 31 日</strong>關閉。
       </p>
-      <p>不過網站仍在測試階段，網址隨時可能變更或暫停服務。</p>
       <p>
-        想持續使用的話，建議先加入我們的 LINE 官方帳號。網址若有異動，我們會第一時間通知您；平時不會打擾大家。
+        請先加入我們的 LINE 官方帳號，試用幾次後再填寫使用心得，即可獲得<strong>正式網站</strong>與<strong>開通碼</strong>。
       </p>
 
       <div className="welcome-line">
