@@ -28,10 +28,10 @@ export default function WelcomeDialog() {
   };
 
   return (
-    <dialog ref={ref} className="welcome lined-paper" onCancel={close}>
+    <dialog ref={ref} className="welcome lined-paper" onCancel={close} aria-labelledby="welcome-title">
       <span className="tape welcome-tape-l" aria-hidden="true" />
       <span className="tape welcome-tape-r" aria-hidden="true" />
-      <h2>歡迎使用教學便利通</h2>
+      <h2 id="welcome-title">歡迎使用教學便利通</h2>
       <p>
         本網站為<strong>試用版</strong>，將於 <strong>2026 年 12 月 31 日</strong>關閉。
       </p>
