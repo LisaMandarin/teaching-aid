@@ -2,7 +2,7 @@
 
 import { listRef, saveWorkbook } from "./excel";
 import { FONTS, type FontId, fontFromSetting } from "./fonts";
-import { type Cell, directLink, fileInFolder, isDriveFolder } from "./lessons";
+import { type Cell, directLink, fileInFolder, isCell, isDriveFolder } from "./lessons";
 import { applyReadings, loadPolyphones } from "./zhuyin";
 
 export const MIN_REELS = 2;
@@ -12,6 +12,13 @@ export const MAX_CELLS = 10;
 
 // `title` is written above the reel, e.g. 誰／在哪裡／做什麼; blank shows nothing.
 export type Reel = { title: string; cells: Cell[] };
+
+// A reel read back from saved data; an empty one couldn't stop on anything.
+export const isReel = (v: unknown): v is Reel =>
+  typeof (v as Reel)?.title === "string" &&
+  Array.isArray((v as Reel).cells) &&
+  (v as Reel).cells.length > 0 &&
+  (v as Reel).cells.every(isCell);
 
 export type SlotSetup = {
   fileName: string | null;

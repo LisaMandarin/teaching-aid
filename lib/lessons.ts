@@ -17,6 +17,20 @@ export type Cell = {
 
 export type Lesson = { name: string; items: Cell[] };
 
+// A cell read back from saved data.
+export function isCell(v: unknown): v is Cell {
+  const c = v as Cell;
+  return (
+    typeof c?.text === "string" &&
+    (c.image === null || typeof c.image === "string") &&
+    (c.imageName === undefined || typeof c.imageName === "string") &&
+    (c.correct === undefined || typeof c.correct === "boolean")
+  );
+}
+
+export const isLesson = (v: unknown): v is Lesson =>
+  typeof (v as Lesson)?.name === "string" && Array.isArray((v as Lesson).items) && (v as Lesson).items.every(isCell);
+
 export const BOARD_SIZE = 9;
 
 const HELP_SHEET = "說明";

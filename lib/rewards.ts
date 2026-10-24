@@ -9,6 +9,18 @@ export type Student = {
 
 export type Roster = { fileName: string; students: Student[] };
 
+// A roster read back from saved data. A student saved without `start` counts from their coins.
+export function rosterFrom(v: unknown): Roster | null {
+  const r = v as Roster;
+  if (!Array.isArray(r?.students)) return null;
+  const students: Student[] = [];
+  for (const s of r.students) {
+    if (typeof s?.name !== "string" || !Number.isFinite(s.coins)) return null;
+    students.push({ name: s.name, coins: s.coins, start: Number.isFinite(s.start) ? s.start : s.coins });
+  }
+  return { fileName: typeof r.fileName === "string" ? r.fileName : "", students };
+}
+
 const cellText = (v: unknown) => (v === null || v === undefined ? "" : String(v).trim());
 
 export async function parseRoster(file: File): Promise<{ roster: Roster; warnings: string[] }> {

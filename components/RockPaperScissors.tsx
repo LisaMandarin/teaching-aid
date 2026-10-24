@@ -7,9 +7,11 @@ import { useEffect, useRef, useState } from "react";
 import { BoardText, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { plainText, withReadings } from "@/lib/readAloud";
 import { playDing, playHandTick, playSoundFile, preloadSoundFile } from "@/lib/sounds";
+import { isStringArray, readSaved, writeSaved } from "@/lib/storage";
 
 type Team = 0 | 1;
 // 0 石頭, 1 布, 2 剪刀: each one beats the one before it.
@@ -53,26 +55,27 @@ export default function RockPaperScissors() {
   const [nameNotice, setNameNotice] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.names?.length === 2) setNames(saved.names);
-      if (saved?.scores?.length === 2) setScores(saved.scores);
-      if (isFontId(saved?.font ?? null)) setFont(saved.font);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { names?: unknown; scores?: unknown[]; font?: string } | null;
+    if (isStringArray(saved?.names) && saved.names.length === 2) setNames(saved.names as [string, string]);
+    if (saved?.scores?.length === 2 && saved.scores.every((n) => Number.isInteger(n) && (n as number) >= 0))
+      setScores(saved.scores as [number, number]);
+    if (isFontId(saved?.font ?? null)) setFont(saved!.font as FontId);
+    setSavedBroken(broken);
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
     preloadSoundFile(CHEER);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ names, scores, font }));
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, { names, scores, font }));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [names, scores, font, muted, loaded]);
 
   // Each team's hand changes on its own, never showing the same one twice in a row.
@@ -220,6 +223,13 @@ export default function RockPaperScissors() {
           </button>
         </div>
       </header>
+
+      <StorageNotice
+        full={storageFull}
+        fullText="隊名和分數沒有存起來，重新整理後會回到上一次存的狀態。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       {nameNotice && (
         <div className="ttt-notice is-warn">

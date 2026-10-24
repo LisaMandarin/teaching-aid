@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import Chalkboard from "./Chalkboard";
 import DropZone from "./DropZone";
+import StorageNotice from "./StorageNotice";
 import { DownloadIcon, FolderIcon, RefreshIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { downloadNamesTemplate, parseNames } from "@/lib/draw";
 import { playDing, playRattle } from "@/lib/sounds";
+import { isStringArray, keepBroken, readSaved, validIndexes, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "draw-list";
 const MUTE_KEY = "draw-muted";
@@ -14,6 +16,19 @@ const SHAKE_MS = 1200;
 const STICK_MS = 1000;
 
 const isExcel = (f: File) => /\.xlsx$/i.test(f.name);
+
+// A list read back from saved data; bad indexes are dropped and older saves get today's defaults.
+function listFrom(v: unknown): List | null {
+  const l = v as List;
+  if (!isStringArray(l?.names)) return null;
+  return {
+    fileName: typeof l.fileName === "string" ? l.fileName : "",
+    names: l.names,
+    history: validIndexes(l.history, l.names.length),
+    absent: validIndexes(l.absent, l.names.length),
+    noRepeat: typeof l.noRepeat === "boolean" ? l.noRepeat : true,
+  };
+}
 
 type List = {
   fileName: string;
@@ -107,24 +122,24 @@ export default function NameDraw() {
   const [flicker, setFlicker] = useState("");
   // Bumped on every draw so the stick animation replays.
   const [drawCount, setDrawCount] = useState(0);
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
 
   // Kept in the browser so a reload in the middle of class doesn't put everyone back in the cup.
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.names) setList(saved);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const saved = readSaved(STORAGE_KEY);
+    const savedList = listFrom(saved.value);
+    if (savedList) setList(savedList);
+    else if (saved.value !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(saved.broken || (saved.value !== null && !savedList));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      if (list) localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      else localStorage.removeItem(STORAGE_KEY);
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, list));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [list, muted, loaded]);
 
   const pool = list
@@ -228,6 +243,12 @@ export default function NameDraw() {
         )}
       </header>
 
+      <StorageNotice
+        full={storageFull}
+        fullText="抽籤的進度沒有存起來，重新整理後會回到上一次存的狀態。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
       {error && (
         <div className="ttt-notice is-warn">
           <button className="ttt-notice-close" onClick={() => setError("")} aria-label="關閉">

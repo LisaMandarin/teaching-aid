@@ -3,11 +3,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import type { Hanzi } from "@/lib/hanzi";
 import { type Cell, type ParsedWorkbook, attachLocalImages } from "@/lib/lessons";
-import { DEFAULT_SETUP, type ParsedSlots, type Reel, type SlotSetup, downloadSlotTemplate, parseSlots } from "@/lib/slots";
+import { DEFAULT_SETUP, type ParsedSlots, type Reel, type SlotSetup, downloadSlotTemplate, isReel, parseSlots } from "@/lib/slots";
 import { playDing, playReelStop, playSlotSpin } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "slot-machine";
 const MUTE_KEY = "slot-machine-muted";
@@ -109,32 +111,40 @@ export default function SlotMachine() {
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    let saved: { setup?: SlotSetup; stops?: number[]; held?: boolean[] } | null = null;
-    try {
-      saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
-    const s = saved?.setup?.reels?.length ? { ...DEFAULT_SETUP, ...saved.setup } : DEFAULT_SETUP;
-    const fits = (list: unknown[] | undefined) => list?.length === s.reels.length;
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { setup?: Partial<SlotSetup>; stops?: unknown[]; held?: unknown[] } | null;
+    const reels = saved?.setup?.reels;
+    const setupOk = Array.isArray(reels) && reels.length > 0 && reels.every(isReel);
+    const s: SlotSetup = setupOk
+      ? {
+          fileName: typeof saved!.setup!.fileName === "string" ? saved!.setup!.fileName : null,
+          reels: reels as Reel[],
+          font: isFontId(saved!.setup!.font ?? null) ? saved!.setup!.font! : DEFAULT_SETUP.font,
+        }
+      : DEFAULT_SETUP;
+    const fits = (list: unknown[] | undefined, ok: (x: unknown) => boolean) => list?.length === s.reels.length && list.every(ok);
     setSetup(s);
-    setStops(fits(saved?.stops) ? saved!.stops!.map((n, i) => mod(n, s.reels[i].cells.length)) : s.reels.map(() => 0));
-    setHeld(fits(saved?.held) ? saved!.held! : s.reels.map(() => false));
+    setStops(
+      fits(saved?.stops, Number.isInteger)
+        ? (saved!.stops as number[]).map((n, i) => mod(n, s.reels[i].cells.length))
+        : s.reels.map(() => 0),
+    );
+    setHeld(fits(saved?.held, (h) => typeof h === "boolean") ? (saved!.held as boolean[]) : s.reels.map(() => false));
+    if (saved !== null && !setupOk) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !setupOk));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
     return () => clearTimeout(flashTimer.current);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ setup, stops, held }));
-      setStorageFull(false);
-    } catch {
-      // Usually the quota: too many images uploaded from the computer.
-      setStorageFull(true);
-    }
+    // Usually fails on the quota: too many images uploaded from the computer.
+    setStorageFull(!writeSaved(STORAGE_KEY, { setup, stops, held }));
   }, [setup, stops, held, loaded]);
 
   useEffect(() => {
@@ -336,11 +346,12 @@ export default function SlotMachine() {
         </div>
       )}
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，拉霸機的內容沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="拉霸機的內容沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       <Chalkboard className="slots-stage">
         <div className="slot-machine" style={{ "--reels": setup.reels.length } as React.CSSProperties}>

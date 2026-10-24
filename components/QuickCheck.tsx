@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Chalkboard from "./Chalkboard";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 import {
   attachLocalImages,
   downloadQuickCheckTemplate,
+  isCell,
   parseWorkbook,
   readImage,
   shuffle,
@@ -37,12 +40,19 @@ const starterItems = (): QuickItem[] => [
 // Not crypto.randomUUID(): it's missing on plain-http LAN addresses, which classrooms often use.
 const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+// Cards read back from saved data; null if any of them isn't a card. Older saves had no answer, which means Y.
+function itemsFrom(v: unknown): QuickItem[] | null {
+  if (!Array.isArray(v) || !v.every((item) => isCell(item) && typeof (item as QuickItem).id === "string")) return null;
+  return (v as QuickItem[]).map((item) => ({ ...item, correct: item.correct ?? true }));
+}
+
 export default function QuickCheck() {
   const [items, setItems] = useState<QuickItem[]>(starterItems);
   const [deck, setDeck] = useState<QuickItem[]>([]);
   const [marks, setMarks] = useState<Record<string, Mark>>({});
   const [loaded, setLoaded] = useState(false);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const [importing, setImporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<ParsedWorkbook | null>(null);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
@@ -51,18 +61,27 @@ export default function QuickCheck() {
   const [font, setFont] = useState<FontId>("plain");
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      // An empty saved deck is the teacher's choice; only a first visit gets the starter cards.
-      if (Array.isArray(saved?.items))
-        setItems(saved.items.map((item: QuickItem) => ({ ...item, correct: item.correct ?? true })));
-      if (Array.isArray(saved?.deck))
-        setDeck(saved.deck.map((item: QuickItem) => ({ ...item, correct: item.correct ?? true })));
-      if (saved?.marks && typeof saved.marks === "object") setMarks(saved.marks);
-      if (typeof saved?.editing === "boolean") setEditing(saved.editing);
-      if (isFontId(saved?.font ?? null)) setFont(saved.font);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { items?: unknown; deck?: unknown; marks?: unknown; editing?: unknown; font?: string } | null;
+    // An empty saved deck is the teacher's choice; only a first visit gets the starter cards.
+    const savedItems = itemsFrom(saved?.items);
+    if (savedItems) {
+      setItems(savedItems);
+      // The shuffled deck holds the same cards; one that doesn't is dealt again from the cards.
+      const savedDeck = itemsFrom(saved?.deck);
+      const ids = new Set(savedItems.map((item) => item.id));
+      setDeck(savedDeck && savedDeck.every((item) => ids.has(item.id)) ? savedDeck : shuffle(savedItems));
+      if (saved?.marks && typeof saved.marks === "object")
+        setMarks(
+          Object.fromEntries(
+            Object.entries(saved.marks).filter(([id, mark]) => ids.has(id) && (mark === "right" || mark === "wrong")),
+          ),
+        );
+    } else if (saved !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !savedItems));
+    if (typeof saved?.editing === "boolean") setEditing(saved.editing);
+    if (isFontId(saved?.font ?? null)) setFont(saved!.font as FontId);
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
     preloadSoundFile(RIGHT_SOUND);
     preloadSoundFile(WRONG_SOUND);
@@ -70,13 +89,8 @@ export default function QuickCheck() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items, deck, marks, editing, font }));
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-      setStorageFull(false);
-    } catch {
-      setStorageFull(true);
-    }
+    setStorageFull(!writeSaved(STORAGE_KEY, { items, deck, marks, editing, font }));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [items, deck, marks, editing, muted, font, loaded]);
 
   const shownDeck = deck.length > 0 ? deck : items;
@@ -191,11 +205,12 @@ export default function QuickCheck() {
         </div>
       </header>
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，這次的素材沒有完整存起來。圖片可以先用「圖片瘦身」縮小再匯入。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="這次的素材沒有完整存起來。圖片可以先用「圖片瘦身」縮小再匯入。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       {pendingImport && (
         <div className="ttt-notice is-pending">

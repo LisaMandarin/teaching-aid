@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BoardText, CellImage, pinyinLine, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import type { Hanzi } from "@/lib/hanzi";
 import { type Cell, type ParsedWorkbook, attachLocalImages } from "@/lib/lessons";
@@ -17,6 +18,8 @@ import {
   SOUND_FILES,
   customColor,
   downloadGiftTemplate,
+  giftSetupFrom,
+  isGift,
   parseGifts,
   randomColors,
   soundOfGift,
@@ -24,6 +27,7 @@ import {
 } from "@/lib/gifts";
 import { shuffle } from "@/lib/lessons";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "gifts-setup";
 const MUTE_KEY = "gifts-muted";
@@ -51,6 +55,17 @@ const newRound = (setup: GiftSetup): Round => ({
   opened: Array(setup.gifts.length).fill(false),
   colors: randomColors(setup.gifts.length),
 });
+
+// The round in progress, read back from saved data, if it still fits the gifts.
+function roundFrom(v: unknown, setup: GiftSetup): Round | null {
+  const r = v as Round | null;
+  const n = setup.gifts.length;
+  return Array.isArray(r?.gifts) && r.gifts.length === n && r.gifts.every(isGift) &&
+    Array.isArray(r.opened) && r.opened.length === n && r.opened.every((o) => typeof o === "boolean") &&
+    Array.isArray(r.colors) && r.colors.length === n && r.colors.every((c) => typeof c === "string")
+    ? r
+    : null;
+}
 
 const kindOf = (gift: Gift) => KINDS.find((k) => k.id === gift.kind)!;
 
@@ -167,30 +182,27 @@ export default function GiftBoxes() {
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    let saved: { setup?: GiftSetup; round?: Round } | null = null;
-    try {
-      saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
-    const s = saved?.setup?.gifts ? { ...DEFAULT_SETUP, ...saved.setup } : DEFAULT_SETUP;
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { setup?: unknown; round?: unknown } | null;
+    const savedSetup = giftSetupFrom(saved?.setup);
+    const s = savedSetup ?? DEFAULT_SETUP;
     setSetup(s);
-    setRound(saved?.round?.gifts?.length === s.gifts.length ? saved.round : newRound(s));
+    setRound(roundFrom(saved?.round, s) ?? newRound(s));
+    if (saved !== null && !savedSetup) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !savedSetup));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
     return () => timers.current.forEach(clearTimeout);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ setup, round }));
-      setStorageFull(false);
-    } catch {
-      // Usually the quota: too many images uploaded from the computer.
-      setStorageFull(true);
-    }
+    // Usually fails on the quota: too many images uploaded from the computer.
+    setStorageFull(!writeSaved(STORAGE_KEY, { setup, round }));
   }, [setup, round, loaded]);
 
   useEffect(() => {
@@ -434,11 +446,12 @@ export default function GiftBoxes() {
         </div>
       )}
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，禮物沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="禮物沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       {round && (
         <Chalkboard className={`gifts-stage ${boom ? "is-boom" : ""}`}>

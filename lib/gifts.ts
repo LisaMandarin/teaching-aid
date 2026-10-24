@@ -1,8 +1,8 @@
 // 開禮物: gifts imported from Excel and hidden in gift boxes, one gift per box.
 
 import { listRef, saveWorkbook } from "./excel";
-import { FONTS, type FontId, fontFromSetting } from "./fonts";
-import { type Cell, directLink, fileInFolder, isDriveFolder, shuffle } from "./lessons";
+import { FONTS, type FontId, fontFromSetting, isFontId } from "./fonts";
+import { type Cell, directLink, fileInFolder, isCell, isDriveFolder, shuffle } from "./lessons";
 import { applyReadings, loadPolyphones } from "./zhuyin";
 
 export type GiftKind = "good" | "bad" | "bomb";
@@ -23,6 +23,25 @@ export const soundUrl = (sound: string) => `/sounds/${encodeURIComponent(sound)}
 
 // `text` is the gift's name; `sound` overrides the default sound for its kind.
 export type Gift = Cell & { kind: GiftKind; sound?: string };
+
+export const isGift = (v: unknown): v is Gift =>
+  isCell(v) &&
+  KINDS.some((k) => k.id === (v as Gift).kind) &&
+  ((v as Gift).sound === undefined || typeof (v as Gift).sound === "string");
+
+// A setup read back from saved data; null without usable gifts. Fields older saves lack get the defaults.
+export function giftSetupFrom(v: unknown): GiftSetup | null {
+  const s = v as Partial<GiftSetup> | null;
+  if (!Array.isArray(s?.gifts) || s.gifts.length === 0 || !s.gifts.every(isGift)) return null;
+  return {
+    fileName: typeof s.fileName === "string" ? s.fileName : null,
+    gifts: s.gifts,
+    colorMode: s.colorMode === "custom" || s.colorMode === "random" ? s.colorMode : DEFAULT_SETUP.colorMode,
+    colors: Array.isArray(s.colors) && s.colors.every((c) => typeof c === "string") ? s.colors : DEFAULT_SETUP.colors,
+    covers: Array.isArray(s.covers) && s.covers.every(isCell) ? s.covers : DEFAULT_SETUP.covers,
+    font: isFontId(s.font ?? null) ? s.font! : DEFAULT_SETUP.font,
+  };
+}
 
 export const soundOfGift = (gift: Gift) =>
   gift.sound && SOUND_FILES.includes(gift.sound) ? gift.sound : KINDS.find((k) => k.id === gift.kind)!.sound;

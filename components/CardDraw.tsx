@@ -7,11 +7,13 @@
 import { useEffect, useRef, useState } from "react";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
+import StorageNotice from "./StorageNotice";
 import { type CardSetup, DEFAULT_SETUP, MAX_DECKS, type ParsedCards, downloadCardTemplate, parseCards } from "@/lib/cards";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import type { Hanzi } from "@/lib/hanzi";
-import { type Cell, type ParsedWorkbook, attachLocalImages, shuffle } from "@/lib/lessons";
+import { type Cell, type ParsedWorkbook, attachLocalImages, isCell, shuffle } from "@/lib/lessons";
 import { playCardFlick, playCardShuffle } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 // A card's place in its deck: 0–51 for playing cards (suit is card / 13, rank is card % 13),
 // or the index of an imported card.
@@ -142,17 +144,31 @@ export default function CardDraw() {
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const timers = useRef<number[]>([]);
   // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
   const importRun = useRef(0);
 
   useEffect(() => {
-    let saved: { setup?: CardSetup; decks?: unknown; faceDown?: unknown } | null = null;
-    try {
-      saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
-    const s = Array.isArray(saved?.setup?.decks) ? { ...DEFAULT_SETUP, ...saved.setup } : DEFAULT_SETUP;
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { setup?: Partial<CardSetup>; decks?: unknown; faceDown?: unknown } | null;
+    // Each deck is playing cards (null) or the teacher's cards.
+    const setupDecks = saved?.setup?.decks;
+    const setupOk =
+      Array.isArray(setupDecks) &&
+      setupDecks.length >= 1 &&
+      setupDecks.length <= MAX_DECKS &&
+      setupDecks.every((d) => d === null || (Array.isArray(d) && d.length > 0 && d.every(isCell)));
+    const s: CardSetup = setupOk
+      ? {
+          fileName: typeof saved!.setup!.fileName === "string" ? saved!.setup!.fileName : null,
+          decks: setupDecks,
+          font: isFontId(saved!.setup!.font ?? null) ? saved!.setup!.font! : DEFAULT_SETUP.font,
+        }
+      : DEFAULT_SETUP;
+    if (saved !== null && !setupOk) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !setupOk));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     const savedDecks = saved?.decks;
     const fits =
       Array.isArray(savedDecks) &&
@@ -169,13 +185,8 @@ export default function CardDraw() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ setup, decks, faceDown }));
-      setStorageFull(false);
-    } catch {
-      // Usually the quota: too many images uploaded from the computer.
-      setStorageFull(true);
-    }
+    // Usually fails on the quota: too many images uploaded from the computer.
+    setStorageFull(!writeSaved(STORAGE_KEY, { setup, decks, faceDown }));
   }, [setup, decks, faceDown, loaded]);
 
   useEffect(() => {
@@ -545,11 +556,12 @@ export default function CardDraw() {
         </div>
       )}
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，抽牌的卡片沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="抽牌的卡片沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       <Chalkboard className="card-board">
         <div className="board-toolbar">

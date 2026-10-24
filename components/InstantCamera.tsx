@@ -8,11 +8,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BoardText, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import DropZone from "./DropZone";
+import StorageNotice from "./StorageNotice";
 import { FolderIcon, RefreshIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { type Photo, addPhotos, clearPhotos, loadPhotos, removePhoto } from "@/lib/camera";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { plainText, withReadings } from "@/lib/readAloud";
 import { playCamera } from "@/lib/sounds";
+import { isStringArray, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "instant-camera";
 const MUTE_KEY = "instant-camera-muted";
@@ -143,6 +145,8 @@ export default function InstantCamera() {
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [editingText, setEditingText] = useState(false);
   const [textNotice, setTextNotice] = useState<string | null>(null);
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
 
   const [phase, setPhase] = useState<Phase>("idle");
   // The photo coming out of the camera, shown big, or on its way to the board.
@@ -161,15 +165,15 @@ export default function InstantCamera() {
   const ejectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.order === "sequence" || saved?.order === "random") setOrder(saved.order);
-      if (Array.isArray(saved?.taken)) setTaken(saved.taken);
-      if (typeof saved?.text === "string") setText(saved.text);
-      if (isFontId(saved?.font ?? null)) setFont(saved.font);
-      if (SIZES.includes(saved?.size)) setSize(saved.size);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { order?: unknown; taken?: unknown; text?: unknown; font?: string; size?: number } | null;
+    if (saved?.order === "sequence" || saved?.order === "random") setOrder(saved.order);
+    if (isStringArray(saved?.taken)) setTaken(saved.taken);
+    if (typeof saved?.text === "string") setText(saved.text);
+    if (isFontId(saved?.font ?? null)) setFont(saved!.font as FontId);
+    if (SIZES.includes(saved?.size as number)) setSize(saved!.size as number);
+    setSavedBroken(broken);
+    setMuted(readSaved(MUTE_KEY).value === 1);
     loadPhotos()
       .then(setPhotos)
       .catch(() => setPersistent(false))
@@ -179,10 +183,8 @@ export default function InstantCamera() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ order, taken, text, font, size }));
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, { order, taken, text, font, size }));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [order, taken, text, font, size, muted, loaded]);
 
   const byId = new Map(photos.map((p) => [p.id, p]));
@@ -380,6 +382,13 @@ export default function InstantCamera() {
           </div>
         )}
       </header>
+
+      <StorageNotice
+        full={storageFull}
+        fullText="黑板上的文字和拍照順序沒有存起來，重新整理後會回到上一次存的狀態。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       {!persistent && (
         <div className="ttt-notice is-warn">

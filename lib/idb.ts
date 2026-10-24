@@ -7,13 +7,17 @@ export function objectStore(dbName: string, storeName: string): RunInStore {
   let dbPromise: Promise<IDBDatabase> | null = null;
 
   const openDb = (): Promise<IDBDatabase> => {
-    dbPromise ??= new Promise((resolve, reject) => {
+    dbPromise ??= new Promise<IDBDatabase>((resolve, reject) => {
       const req = indexedDB.open(dbName, 1);
       req.onupgradeneeded = () => req.result.createObjectStore(storeName, { keyPath: "id" });
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
+    }).catch((e) => {
+      // Not kept, so the next call (e.g. a retry) tries to open it again.
+      dbPromise = null;
+      throw e;
     });
-    return dbPromise;
+    return dbPromise!;
   };
 
   return async (mode, fn) => {

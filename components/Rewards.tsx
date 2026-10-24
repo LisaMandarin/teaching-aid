@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import DropZone from "./DropZone";
+import StorageNotice from "./StorageNotice";
 import { DownloadIcon, FolderIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
-import { downloadRoster, downloadRosterTemplate, parseRoster, type Roster } from "@/lib/rewards";
+import { downloadRoster, downloadRosterTemplate, parseRoster, rosterFrom, type Roster } from "@/lib/rewards";
 import { playCoin, preloadCoinSound } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "rewards-roster";
 const MUTE_KEY = "rewards-muted";
@@ -53,25 +55,25 @@ export default function Rewards() {
   const [falling, setFalling] = useState<{ id: number; row: number }[]>([]);
   // Rows whose chest just caught a coin, to bounce it.
   const [bumped, setBumped] = useState<Record<number, number>>({});
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
 
   // Kept in the browser so a reload in the middle of class doesn't lose the coins.
   useEffect(() => {
     preloadCoinSound();
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.students) setRoster(saved);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const saved = readSaved(STORAGE_KEY);
+    const savedRoster = rosterFrom(saved.value);
+    if (savedRoster) setRoster(savedRoster);
+    else if (saved.value !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(saved.broken || (saved.value !== null && !savedRoster));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      if (roster) localStorage.setItem(STORAGE_KEY, JSON.stringify(roster));
-      else localStorage.removeItem(STORAGE_KEY);
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, roster));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [roster, muted, loaded]);
 
   const earnedToday = roster?.students.some((s) => s.coins !== s.start) ?? false;
@@ -176,6 +178,12 @@ export default function Rewards() {
         )}
       </header>
 
+      <StorageNotice
+        full={storageFull}
+        fullText="今天的金幣沒有存起來，重新整理後會不見。請先按「下載紀錄」存到電腦。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
       {error && (
         <div className="ttt-notice is-warn">
           <button className="ttt-notice-close" onClick={() => setError("")} aria-label="關閉">

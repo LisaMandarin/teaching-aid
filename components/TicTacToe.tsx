@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
+import StorageNotice from "./StorageNotice";
 import { playCheer, playWriting, preloadMarkSounds, setMuted } from "@/lib/sounds";
+import { isStringArray, keepBroken, readSaved, writeSaved } from "@/lib/storage";
 import {
   type Cell,
   type Lesson,
@@ -13,6 +15,8 @@ import {
   downloadTemplate,
   drawBoard,
   emptyCell,
+  isCell,
+  isLesson,
   parseWorkbook,
   readImage,
   shuffle,
@@ -87,19 +91,25 @@ export default function TicTacToe() {
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const [font, setFont] = useState<FontId>("plain");
 
   // Remember the teacher's board and team names in this browser.
   useEffect(() => {
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { cells?: unknown[]; names?: unknown; lessons?: unknown[]; lessonIndex?: unknown } | null;
+    const cellsOk = saved?.cells?.length === 9 && saved.cells.every(isCell);
+    if (cellsOk) setCells(saved!.cells as Cell[]);
+    if (isStringArray(saved?.names) && saved.names.length === 2) setNames(saved.names as [string, string]);
+    const savedLessons = Array.isArray(saved?.lessons) ? saved.lessons.filter(isLesson) : [];
+    setLessons(savedLessons);
+    const i = saved?.lessonIndex;
+    if (Number.isInteger(i) && (i as number) >= 0 && (i as number) < savedLessons.length) setLessonIndex(i as number);
+    if (saved !== null && !cellsOk) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !cellsOk));
+    setMutedState(readSaved(MUTE_KEY).value === 1);
+    // Saved as the bare id, not JSON.
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.cells?.length === 9) setCells(saved.cells);
-      if (saved?.names?.length === 2) setNames(saved.names);
-      if (Array.isArray(saved?.lessons)) setLessons(saved.lessons);
-      if (typeof saved?.lessonIndex === "number") setLessonIndex(saved.lessonIndex);
-    } catch {}
-    try {
-      setMutedState(localStorage.getItem(MUTE_KEY) === "1");
       const savedFont = localStorage.getItem(FONT_KEY);
       if (isFontId(savedFont)) setFont(savedFont);
     } catch {}
@@ -123,13 +133,8 @@ export default function TicTacToe() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, names, lessons, lessonIndex }));
-      setStorageFull(false);
-    } catch {
-      // Usually the quota: too many images uploaded from the computer.
-      setStorageFull(true);
-    }
+    // Usually fails on the quota: too many images uploaded from the computer.
+    setStorageFull(!writeSaved(STORAGE_KEY, { cells, names, lessons, lessonIndex }));
   }, [cells, names, lessons, lessonIndex, loaded]);
 
   const lesson = lessonIndex !== null ? lessons[lessonIndex] : undefined;
@@ -385,11 +390,12 @@ export default function TicTacToe() {
         </div>
       )}
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，題目沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="題目沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       <Chalkboard className="ttt-board">
         <p className={`status ttt-status ${winner ? "is-won" : ""}`}>{status}</p>
