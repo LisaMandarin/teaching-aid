@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BoardText, CellImage, pinyinLine, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import type { Hanzi } from "@/lib/hanzi";
 import { type Cell, type ParsedWorkbook, attachLocalImages } from "@/lib/lessons";
@@ -17,6 +18,8 @@ import {
   SOUND_FILES,
   customColor,
   downloadGiftTemplate,
+  giftSetupFrom,
+  isGift,
   parseGifts,
   randomColors,
   soundOfGift,
@@ -24,6 +27,8 @@ import {
 } from "@/lib/gifts";
 import { shuffle } from "@/lib/lessons";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
+import { READING_MARKS } from "@/lib/zhuyin";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "gifts-setup";
 const MUTE_KEY = "gifts-muted";
@@ -52,6 +57,17 @@ const newRound = (setup: GiftSetup): Round => ({
   colors: randomColors(setup.gifts.length),
 });
 
+// The round in progress, read back from saved data, if it still fits the gifts.
+function roundFrom(v: unknown, setup: GiftSetup): Round | null {
+  const r = v as Round | null;
+  const n = setup.gifts.length;
+  return Array.isArray(r?.gifts) && r.gifts.length === n && r.gifts.every(isGift) &&
+    Array.isArray(r.opened) && r.opened.length === n && r.opened.every((o) => typeof o === "boolean") &&
+    Array.isArray(r.colors) && r.colors.length === n && r.colors.every((c) => typeof c === "string")
+    ? r
+    : null;
+}
+
 const kindOf = (gift: Gift) => KINDS.find((k) => k.id === gift.kind)!;
 
 // A light box (yellow, silver…) gets a red ribbon; the rest a gold one.
@@ -67,7 +83,7 @@ function textWidth(text: string, font: FontId, hanzi: Hanzi | null): number {
   if (font === "pinyin-only" && hanzi) text = pinyinLine(hanzi.convert(text));
   const han = font === "plain" || font === "hans" ? 1 : font === "zhuyin-only" ? 0.9 : font === "hans-pinyin" ? 1.5 : 1.3;
   let width = 0;
-  for (const ch of text.replace(/[\u{E0100}-\u{E01EF}\uFE00-\uFE0F]/gu, "").trim())
+  for (const ch of text.replace(READING_MARKS, "").trim())
     width += /[\p{Script=Han}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u.test(ch) ? han : ch === " " ? 0.3 : 0.6;
   return Math.max(width, 1);
 }
@@ -126,7 +142,8 @@ function BoxArt({ number, cover, font, hanzi }: { number: number; cover?: Cell; 
   );
 }
 
-function GiftFace({ gift }: { gift: Gift }) {
+// The gift inside an opened box. Its name is in the same font as the covers.
+function GiftFace({ gift, font, hanzi }: { gift: Gift; font: FontId; hanzi: Hanzi | null }) {
   const [failed, setFailed] = useState(false);
   let visual: React.ReactNode = null;
   if (gift.image && !failed)
@@ -144,7 +161,11 @@ function GiftFace({ gift }: { gift: Gift }) {
   return (
     <>
       {visual}
-      {gift.text && <span className={`gift-name ${visual ? "" : "is-big"}`}>{gift.text}</span>}
+      {gift.text && (
+        <span className={`gift-name ${visual ? "" : "is-big"}`}>
+          <BoardText text={gift.text} font={font} hanzi={hanzi} />
+        </span>
+      )}
     </>
   );
 }
@@ -164,33 +185,33 @@ export default function GiftBoxes() {
   // The whole stage shakes for a moment when a bomb goes off.
   const [boom, setBoom] = useState(false);
   const [pendingImport, setPendingImport] = useState<ParsedGifts | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let saved: { setup?: GiftSetup; round?: Round } | null = null;
-    try {
-      saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
-    const s = saved?.setup?.gifts ? { ...DEFAULT_SETUP, ...saved.setup } : DEFAULT_SETUP;
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { setup?: unknown; round?: unknown } | null;
+    const savedSetup = giftSetupFrom(saved?.setup);
+    const s = savedSetup ?? DEFAULT_SETUP;
     setSetup(s);
-    setRound(saved?.round?.gifts?.length === s.gifts.length ? saved.round : newRound(s));
+    setRound(roundFrom(saved?.round, s) ?? newRound(s));
+    if (saved !== null && !savedSetup) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !savedSetup));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
     return () => timers.current.forEach(clearTimeout);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ setup, round }));
-      setStorageFull(false);
-    } catch {
-      // Usually the quota: too many images uploaded from the computer.
-      setStorageFull(true);
-    }
+    // Usually fails on the quota: too many images uploaded from the computer.
+    setStorageFull(!writeSaved(STORAGE_KEY, { setup, round }));
   }, [setup, round, loaded]);
 
   useEffect(() => {
@@ -205,8 +226,9 @@ export default function GiftBoxes() {
     [SHAKE_SOUND, ...SOUND_FILES].forEach((s) => preloadSoundFile(soundUrl(s)));
   }, []);
 
+  // A sound due after the teacher has gone to another page isn't played (the game stays mounted there).
   const play = (sound: string) => {
-    if (!muted) playSoundFile(soundUrl(sound));
+    if (!muted && rootRef.current?.checkVisibility()) playSoundFile(soundUrl(sound));
   };
   const later = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
 
@@ -277,31 +299,49 @@ export default function GiftBoxes() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseGifts(file);
+      if (run !== importRun.current) return;
       if (parsed.setup.gifts.length === 0)
         setNotice({ lines: [], warnings: ["這個檔案裡找不到禮物。請用範本的格式：「禮物」工作表第一列是「名稱」「圖片」「種類」「數量」「音效」。"] });
       else if (parsed.localNames.length > 0) setPendingImport(parsed);
       else applyImport(parsed, []);
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
     const lessons: ParsedWorkbook["lessons"] = [
       { name: "", items: pendingImport.setup.gifts },
       { name: "", items: pendingImport.setup.covers },
     ];
-    const missing = await attachLocalImages(lessons, files);
+    const missing = await attachLocalImages(lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedGifts) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
   };
 
   const lastGift = result && round ? round.gifts[result.index] : null;
@@ -309,7 +349,7 @@ export default function GiftBoxes() {
   const hanzi = useHanzi(setup.font);
 
   return (
-    <div className="game gifts">
+    <div ref={rootRef} className="game gifts">
       {lastGift?.kind === "good" && <Confetti key={result!.key} />}
 
       <header className="page-header">
@@ -376,7 +416,7 @@ export default function GiftBoxes() {
               <input
                 type="file"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                hidden
+                className="file-input"
                 disabled={importing || busy}
                 onChange={(e) => {
                   void importExcel(e.target.files?.[0]);
@@ -402,7 +442,7 @@ export default function GiftBoxes() {
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void pickLocalImages([...(e.target.files ?? [])]);
@@ -410,10 +450,10 @@ export default function GiftBoxes() {
                 }}
               />
             </label>
-            <button className="btn" onClick={() => applyImport(pendingImport, pendingImport.localNames)}>
+            <button className="btn" onClick={() => skipImages(pendingImport)}>
               略過圖片
             </button>
-            <button className="btn" onClick={() => setPendingImport(null)}>
+            <button className="btn" onClick={cancelImport}>
               取消匯入
             </button>
           </div>
@@ -434,11 +474,12 @@ export default function GiftBoxes() {
         </div>
       )}
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，禮物沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="禮物沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       {round && (
         <Chalkboard className={`gifts-stage ${boom ? "is-boom" : ""}`}>
@@ -447,7 +488,14 @@ export default function GiftBoxes() {
               <span className="gifts-placeholder">第 {shaking + 1} 個禮物盒…</span>
             ) : lastGift ? (
               <span key={result!.key} className={`gifts-result-text kind-${lastGift.kind}`}>
-                {kindOf(lastGift).emoji} {lastGift.text || kindOf(lastGift).name}
+                {kindOf(lastGift).emoji}{" "}
+                {lastGift.text ? (
+                  <span style={coverFont ? { fontFamily: `${coverFont}, var(--font-board-text)` } : undefined}>
+                    <BoardText text={lastGift.text} font={setup.font} hanzi={hanzi} />
+                  </span>
+                ) : (
+                  kindOf(lastGift).name
+                )}
               </span>
             ) : (
               <span className="gifts-placeholder">{allOpened ? "禮物都打開了！" : "選一個禮物盒吧！"}</span>
@@ -479,7 +527,7 @@ export default function GiftBoxes() {
                   </button>
                   {opened && (
                     <div key={isNew ? reveal.key : "done"} className={`gift-item kind-${gift.kind} ${isNew ? "is-new" : ""}`}>
-                      <GiftFace gift={gift} />
+                      <GiftFace gift={gift} font={setup.font} hanzi={hanzi} />
                     </div>
                   )}
                   {isNew && gift.kind === "bomb" && <div className="gift-boom" aria-hidden="true" />}

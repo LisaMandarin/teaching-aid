@@ -1,11 +1,7 @@
 // Synthesized sound effects (Web Audio API) — no audio files needed.
 
+// Each game has its own mute switch and checks it before playing.
 let ctx: AudioContext | null = null;
-let muted = false;
-
-export function setMuted(value: boolean) {
-  muted = value;
-}
 
 // Created lazily: browsers only allow audio after a user gesture.
 function audio(): AudioContext {
@@ -126,7 +122,6 @@ export function playScream() {
 
 // Sound for the n-th stroke (1-based): 1–4 scratch, 5 to max-1 "oh-oh", last one scream.
 export function playStrokeSound(n: number, max: number) {
-  if (muted) return;
   if (n >= max) playScream();
   else if (n >= 5) playUhOh();
   else playScratch();
@@ -141,7 +136,6 @@ function fileAudio(path: string): HTMLAudioElement {
 }
 
 function playFile(path: string) {
-  if (muted) return;
   const a = fileAudio(path);
   a.currentTime = 0;
   a.play().catch(() => {});
@@ -166,7 +160,7 @@ const COIN = "/sounds/coin.mp3";
 
 export const preloadCoinSound = () => fileAudio(COIN).load();
 
-// Coin dropping into the chest. Ignores the games' mute switch; the rewards page has its own.
+// Coin dropping into the chest.
 export function playCoin() {
   const a = fileAudio(COIN);
   a.currentTime = 0;

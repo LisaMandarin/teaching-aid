@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BoardText, useHanzi } from "./CellContent";
 import DropZone from "./DropZone";
+import StorageNotice from "./StorageNotice";
 import { DownloadIcon, FolderIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
-import { downloadRoster, downloadRosterTemplate, parseRoster, type Roster } from "@/lib/rewards";
+import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
+import { downloadRoster, downloadRosterTemplate, parseRoster, rosterFrom, type Roster } from "@/lib/rewards";
 import { playCoin, preloadCoinSound } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "rewards-roster";
 const MUTE_KEY = "rewards-muted";
@@ -53,26 +57,31 @@ export default function Rewards() {
   const [falling, setFalling] = useState<{ id: number; row: number }[]>([]);
   // Rows whose chest just caught a coin, to bounce it.
   const [bumped, setBumped] = useState<Record<number, number>>({});
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
 
   // Kept in the browser so a reload in the middle of class doesn't lose the coins.
   useEffect(() => {
     preloadCoinSound();
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.students) setRoster(saved);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const saved = readSaved(STORAGE_KEY);
+    const savedRoster = rosterFrom(saved.value);
+    if (savedRoster) setRoster(savedRoster);
+    else if (saved.value !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(saved.broken || (saved.value !== null && !savedRoster));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      if (roster) localStorage.setItem(STORAGE_KEY, JSON.stringify(roster));
-      else localStorage.removeItem(STORAGE_KEY);
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, roster));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [roster, muted, loaded]);
+
+  const font = roster?.font ?? "plain";
+  const setFont = (f: FontId) => setRoster((r) => r && { ...r, font: f });
+  const hanzi = useHanzi(font);
+  const family = fontFamilyOf(font);
 
   const earnedToday = roster?.students.some((s) => s.coins !== s.start) ?? false;
 
@@ -82,7 +91,7 @@ export default function Rewards() {
     if (!isExcel(file)) return setError("請選擇 Excel 檔（.xlsx）。");
     if (earnedToday && !confirm("今天的金幣還沒下載，換成新的檔案會蓋掉。確定要換嗎？")) return;
     try {
-      const { roster: next, warnings } = await parseRoster(file);
+      const { roster: next, warnings } = await parseRoster(file, roster?.font ?? "plain");
       if (next.students.length === 0) return setError("檔案裡找不到學生。第一列寫「學生」「金幣」，從第二列開始每列一位學生。");
       setRoster(next);
       setWarnings(warnings);
@@ -117,7 +126,7 @@ export default function Rewards() {
       <input
         type="file"
         accept=".xlsx"
-        hidden
+        className="file-input"
         onChange={(e) => {
           void open(e.target.files?.[0]);
           e.target.value = "";
@@ -153,6 +162,16 @@ export default function Rewards() {
         </div>
         {roster && (
           <div className="page-tools">
+          <label className="tag-field">
+            名字字型
+            <select className="select-tag" value={font} onChange={(e) => isFontId(e.target.value) && setFont(e.target.value)}>
+              {FONTS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
             <button
               className="btn-tag mute-btn"
               onClick={() => setMuted((m) => !m)}
@@ -176,6 +195,12 @@ export default function Rewards() {
         )}
       </header>
 
+      <StorageNotice
+        full={storageFull}
+        fullText="今天的金幣沒有存起來，重新整理後會不見。請先按「下載紀錄」存到電腦。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
       {error && (
         <div className="ttt-notice is-warn">
           <button className="ttt-notice-close" onClick={() => setError("")} aria-label="關閉">
@@ -203,7 +228,7 @@ export default function Rewards() {
             <input
               type="file"
               accept=".xlsx"
-              hidden
+              className="file-input"
               onChange={(e) => {
                 void open(e.target.files?.[0]);
                 e.target.value = "";
@@ -231,8 +256,13 @@ export default function Rewards() {
                   aria-label={`${s.name}，${s.coins} 枚金幣，點一下加一枚`}
                 >
                   <span className="pin pin--md" aria-hidden="true" />
-                  <span className="rewards-name" title={s.name}>
-                    {s.name}
+                  <span
+                    className="rewards-name"
+                    title={s.name}
+                    data-font={font}
+                    style={family ? { fontFamily: `${family}, var(--font-board-text)`, fontWeight: 400 } : undefined}
+                  >
+                    <BoardText text={s.name} font={font} hanzi={hanzi} />
                   </span>
                   <span className="chest">
                     {falling

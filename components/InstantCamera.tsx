@@ -8,11 +8,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BoardText, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import DropZone from "./DropZone";
+import StorageNotice from "./StorageNotice";
 import { FolderIcon, RefreshIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { type Photo, addPhotos, clearPhotos, loadPhotos, removePhoto } from "@/lib/camera";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { plainText, withReadings } from "@/lib/readAloud";
 import { playCamera } from "@/lib/sounds";
+import { isStringArray, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "instant-camera";
 const MUTE_KEY = "instant-camera-muted";
@@ -143,6 +145,8 @@ export default function InstantCamera() {
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [editingText, setEditingText] = useState(false);
   const [textNotice, setTextNotice] = useState<string | null>(null);
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
 
   const [phase, setPhase] = useState<Phase>("idle");
   // The photo coming out of the camera, shown big, or on its way to the board.
@@ -159,17 +163,19 @@ export default function InstantCamera() {
   // Where the photo was when it started growing to full screen.
   const zoomFrom = useRef<Spot | null>(null);
   const ejectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // What had the focus before a photo was shown big (拍照 or a photo on the board); it gets it back after.
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.order === "sequence" || saved?.order === "random") setOrder(saved.order);
-      if (Array.isArray(saved?.taken)) setTaken(saved.taken);
-      if (typeof saved?.text === "string") setText(saved.text);
-      if (isFontId(saved?.font ?? null)) setFont(saved.font);
-      if (SIZES.includes(saved?.size)) setSize(saved.size);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { order?: unknown; taken?: unknown; text?: unknown; font?: string; size?: number } | null;
+    if (saved?.order === "sequence" || saved?.order === "random") setOrder(saved.order);
+    if (isStringArray(saved?.taken)) setTaken(saved.taken);
+    if (typeof saved?.text === "string") setText(saved.text);
+    if (isFontId(saved?.font ?? null)) setFont(saved!.font as FontId);
+    if (SIZES.includes(saved?.size as number)) setSize(saved!.size as number);
+    setSavedBroken(broken);
+    setMuted(readSaved(MUTE_KEY).value === 1);
     loadPhotos()
       .then(setPhotos)
       .catch(() => setPersistent(false))
@@ -179,10 +185,8 @@ export default function InstantCamera() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ order, taken, text, font, size }));
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, { order, taken, text, font, size }));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [order, taken, text, font, size, muted, loaded]);
 
   const byId = new Map(photos.map((p) => [p.id, p]));
@@ -206,9 +210,21 @@ export default function InstantCamera() {
     });
   }, [phase]);
 
+  useEffect(() => {
+    if (phase !== "idle" || !returnFocus.current) return;
+    // After the last photo, 拍一張 is gone and the shutter is disabled: the photo just put on the board takes the focus instead.
+    const back = returnFocus.current;
+    const usable = back.isConnected && !back.matches(":disabled");
+    const to = usable ? back : onBoardRefs.current.get(taken.at(-1) ?? "");
+    to?.focus();
+    returnFocus.current = null;
+  }, [phase, taken]);
+
   const take = () => {
     if (busy || left.length === 0) return;
     const pick = order === "random" ? left[Math.floor(Math.random() * left.length)] : left[0];
+    // Saved now: 拍照 is disabled while the photo comes out, which takes the focus off it.
+    if (document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement;
     setTaken((prev) => [...prev, pick.id]);
     setShownId(pick.id);
     setFresh(true);
@@ -224,6 +240,7 @@ export default function InstantCamera() {
   // A photo on the board, shown big again.
   const view = (photo: Photo, el: HTMLElement, angle: number) => {
     if (busy) return;
+    if (document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement;
     zoomFrom.current = spotOf(el, angle);
     setShownId(photo.id);
     setFresh(false);
@@ -322,7 +339,7 @@ export default function InstantCamera() {
         type="file"
         accept="image/*"
         multiple
-        hidden
+        className="file-input"
         disabled={importing}
         onChange={(e) => {
           void importPhotos(filesIn(e.target.files));
@@ -381,6 +398,13 @@ export default function InstantCamera() {
         )}
       </header>
 
+      <StorageNotice
+        full={storageFull}
+        fullText="黑板上的文字和拍照順序沒有存起來，重新整理後會回到上一次存的狀態。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
+
       {!persistent && (
         <div className="ttt-notice is-warn">
           <p>⚠️ 這個瀏覽器不能儲存照片（可能是無痕視窗），重新整理頁面後要再加入一次。</p>
@@ -409,7 +433,7 @@ export default function InstantCamera() {
             type="file"
             accept="image/*"
             multiple
-            hidden
+            className="file-input"
             disabled={importing}
             onChange={(e) => {
               void importPhotos(filesIn(e.target.files));
@@ -604,6 +628,8 @@ export default function InstantCamera() {
               e.preventDefault();
               putDown();
             }
+            // The photo is the only thing to act on while it's big: Tab doesn't leave it for the page behind.
+            if (e.key === "Tab") e.preventDefault();
           }}
         >
           <div ref={bigRef} className={`instant-photo instant-big ${fresh ? "is-developing" : ""}`} style={shapeOf(shown)}>

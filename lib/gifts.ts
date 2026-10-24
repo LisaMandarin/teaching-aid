@@ -1,8 +1,8 @@
 // 開禮物: gifts imported from Excel and hidden in gift boxes, one gift per box.
 
 import { listRef, saveWorkbook } from "./excel";
-import { FONTS, type FontId, fontFromSetting } from "./fonts";
-import { type Cell, directLink, fileInFolder, isDriveFolder, shuffle } from "./lessons";
+import { FONTS, type FontId, fontFromSetting, isFontId } from "./fonts";
+import { type Cell, directLink, fileInFolder, isCell, isDriveFolder, shuffle } from "./lessons";
 import { applyReadings, loadPolyphones } from "./zhuyin";
 
 export type GiftKind = "good" | "bad" | "bomb";
@@ -24,8 +24,30 @@ export const soundUrl = (sound: string) => `/sounds/${encodeURIComponent(sound)}
 // `text` is the gift's name; `sound` overrides the default sound for its kind.
 export type Gift = Cell & { kind: GiftKind; sound?: string };
 
+export const isGift = (v: unknown): v is Gift =>
+  isCell(v) &&
+  KINDS.some((k) => k.id === (v as Gift).kind) &&
+  ((v as Gift).sound === undefined || typeof (v as Gift).sound === "string");
+
+// A setup read back from saved data; null without usable gifts. Fields older saves lack get the defaults.
+export function giftSetupFrom(v: unknown): GiftSetup | null {
+  const s = v as Partial<GiftSetup> | null;
+  if (!Array.isArray(s?.gifts) || s.gifts.length === 0 || !s.gifts.every(isGift)) return null;
+  return {
+    fileName: typeof s.fileName === "string" ? s.fileName : null,
+    gifts: s.gifts,
+    colorMode: s.colorMode === "custom" || s.colorMode === "random" ? s.colorMode : DEFAULT_SETUP.colorMode,
+    colors: Array.isArray(s.colors) && s.colors.every((c) => typeof c === "string") ? s.colors : DEFAULT_SETUP.colors,
+    covers: Array.isArray(s.covers) && s.covers.every(isCell) ? s.covers : DEFAULT_SETUP.covers,
+    font: isFontId(s.font ?? null) ? s.font! : DEFAULT_SETUP.font,
+  };
+}
+
 export const soundOfGift = (gift: Gift) =>
   gift.sound && SOUND_FILES.includes(gift.sound) ? gift.sound : KINDS.find((k) => k.id === gift.kind)!.sound;
+
+// One box per gift; more than a board can show (and a typo like 數量 10000000 would hang the page).
+export const MAX_GIFTS = 60;
 
 export type ColorMode = "random" | "custom";
 
@@ -195,6 +217,10 @@ export async function parseGifts(file: File): Promise<ParsedGifts> {
     const n = Number(cellText(row[bc.n]));
     if (!Number.isInteger(n) || n < 1) continue;
     const where = `「禮物盒」第 ${n} 個盒子`;
+    if (n > MAX_GIFTS) {
+      warnings.push(`${where}用不到：最多 ${MAX_GIFTS} 個禮物盒。`);
+      continue;
+    }
 
     const value = cellText(row[bc.color]);
     const color = value ? colorOf(value) : undefined;
@@ -259,9 +285,15 @@ export async function parseGifts(file: File): Promise<ParsedGifts> {
     if (soundText && !sound)
       warnings.push(`「${label}」的音效「${soundText}」找不到，改用 ${KINDS.find((k) => k.id === kind)!.sound}。可以選：${SOUND_FILES.join("、")}。`);
 
-    const gift: Gift = { ...withImage(text, img, `「${label}」`), kind, sound };
+    const room = MAX_GIFTS - setup.gifts.length;
+    if (amount > room) {
+      warnings.push(`最多 ${MAX_GIFTS} 個禮物盒，「${label}」只放了 ${room} 份（填的是 ${amount} 份），後面的禮物也放不下了。`);
+      amount = room;
+    }
+    const gift: Gift = { ...withImage(readings(text, `「${label}」`), img, `「${label}」`), kind, sound };
     // Copies share one object so a local image picked later fills them all.
     for (let i = 0; i < amount; i++) setup.gifts.push(gift);
+    if (setup.gifts.length === MAX_GIFTS) break;
   }
 
   const extra = setup.covers.length - setup.gifts.length;
@@ -278,7 +310,7 @@ export async function downloadGiftTemplate() {
     "「開禮物」範本",
     "",
     "・有下拉選單的格子，點一下右邊的小箭頭就能選。",
-    "・「禮物」工作表每列一種禮物，每一份禮物放進一個禮物盒：禮物盒的數量 = 所有禮物的「數量」加起來。",
+    `・「禮物」工作表每列一種禮物，每一份禮物放進一個禮物盒：禮物盒的數量 = 所有禮物的「數量」加起來，最多 ${MAX_GIFTS} 個。`,
     "    - 名稱：打開時顯示的字，可以加表情符號，例如 🍬 糖果。有圖片的話可以留空。",
     "    - 圖片：檔名（例如 apple.png）或完整網址；留空就只顯示名稱（炸彈沒有圖片時會顯示 💣）。",
     "    - 種類：好禮物、不好的禮物、炸彈。",

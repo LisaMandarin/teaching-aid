@@ -17,6 +17,20 @@ export type Cell = {
 
 export type Lesson = { name: string; items: Cell[] };
 
+// A cell read back from saved data.
+export function isCell(v: unknown): v is Cell {
+  const c = v as Cell;
+  return (
+    typeof c?.text === "string" &&
+    (c.image === null || typeof c.image === "string") &&
+    (c.imageName === undefined || typeof c.imageName === "string") &&
+    (c.correct === undefined || typeof c.correct === "boolean")
+  );
+}
+
+export const isLesson = (v: unknown): v is Lesson =>
+  typeof (v as Lesson)?.name === "string" && Array.isArray((v as Lesson).items) && (v as Lesson).items.every(isCell);
+
 export const BOARD_SIZE = 9;
 
 const HELP_SHEET = "說明";
@@ -192,30 +206,34 @@ export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
 
 // Fill in images that were given as bare file names, matching the chosen files by name.
 // Returns the names that had no matching file.
-export async function attachLocalImages(lessons: Lesson[], files: File[]): Promise<string[]> {
+// `wanted` is asked once the files are read: an import cancelled or skipped meanwhile is left as it was
+// (its cells may already be on the board), and null comes back.
+export async function attachLocalImages(
+  lessons: Lesson[],
+  files: File[],
+  wanted: () => boolean = () => true,
+): Promise<string[] | null> {
   const byName = new Map(files.map((f) => [f.name.toLowerCase(), f]));
   const loaded = new Map<string, string>();
   const missing = new Set<string>();
+  const items = lessons.flatMap((lesson) => lesson.items).filter((item) => !item.image && item.imageName);
 
-  for (const lesson of lessons) {
-    for (const item of lesson.items) {
-      if (item.image || !item.imageName) continue;
-      const key = item.imageName.toLowerCase();
-      if (!loaded.has(key)) {
-        const file = byName.get(key);
-        if (!file) {
-          missing.add(item.imageName);
-          continue;
-        }
-        try {
-          loaded.set(key, await readImage(file));
-        } catch {
-          missing.add(item.imageName);
-          continue;
-        }
-      }
-      item.image = loaded.get(key)!;
+  for (const item of items) {
+    const key = item.imageName!.toLowerCase();
+    if (loaded.has(key) || missing.has(item.imageName!)) continue;
+    const file = byName.get(key);
+    try {
+      if (!file) throw new Error();
+      loaded.set(key, await readImage(file));
+    } catch {
+      missing.add(item.imageName!);
     }
+  }
+
+  if (!wanted()) return null;
+  for (const item of items) {
+    const image = loaded.get(item.imageName!.toLowerCase());
+    if (image) item.image = image;
   }
   return [...missing];
 }

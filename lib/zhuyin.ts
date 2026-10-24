@@ -5,11 +5,20 @@
 // Readings per character in font order (see scripts/build-polyphones.mjs).
 export type PolyphoneTable = Record<string, string>;
 
-const VS_BASE = 0xe01e0;
+export const VS_BASE = 0xe01e0;
 
-// Variation selectors are invisible; they shouldn't count towards a word's length.
-const SELECTORS = /[\u{E0100}-\u{E01EF}︀-️]/gu;
-export const visibleLength = (text: string) => [...text.replace(SELECTORS, "").trim()].length;
+// Written after a 破音字 whose first reading was picked. The fonts show the first reading without a mark,
+// but 拼音 would guess the reading from the word (音樂[ㄌㄜˋ] → yuè). Not VS_BASE itself: the fonts don't
+// know that sequence, and the browser then draws the character in another font, without its 注音.
+// A word joiner is invisible in every font and doesn't change line breaks.
+export const FIRST_READING = "\u2060";
+
+// Variation selectors and FIRST_READING: invisible, and they belong to the character before them.
+export const READING_MARKS = /[\u{E0100}-\u{E01EF}\uFE00-\uFE0F\u2060]/gu;
+export const isReadingMark = (ch: string) => /^[\u{E0100}-\u{E01EF}\uFE00-\uFE0F\u2060]$/u.test(ch);
+
+// The reading marks shouldn't count towards a word's length.
+export const visibleLength = (text: string) => [...text.replace(READING_MARKS, "").trim()].length;
 
 // A Han character followed by a bracketed reading: 長[ㄓㄤˇ], 長(ㄓㄤˇ), 長（ㄓㄤˇ）, 長【ㄓㄤˇ】.
 const MARKED = /(\p{Script=Han})\s*[[(（【]\s*([ㄅ-ㄯㆠ-ㆿˊˇˋ˙ˉ ]+?)\s*[\])）】]/gu;
@@ -41,7 +50,21 @@ export function applyReadings(text: string, polyphones: PolyphoneTable): { text:
       problems.push({ char, reading, options });
       return char;
     }
-    return index === 0 ? char : char + String.fromCodePoint(VS_BASE + index);
+    return char + (index === 0 ? FIRST_READING : String.fromCodePoint(VS_BASE + index));
   });
   return { text: out, problems };
+}
+
+// What to tell the teacher about readings that don't exist; null if there are none.
+export const problemsNotice = (problems: ReadingProblem[]) =>
+  problems.length > 0
+    ? `這些讀音找不到：${problems.map((p) => `${p.char}[${p.reading}]（可用：${p.options.join("、")}）`).join("；")}`
+    : null;
+
+// Text typed straight into a field: 長[ㄓㄤˇ] becomes 長 with its reading, once the teacher is done typing.
+// Null when there's nothing to do.
+export async function typedReadings(text: string): Promise<{ text: string; notice: string | null } | null> {
+  if (!/[[(（【]/.test(text)) return null;
+  const done = applyReadings(text, await loadPolyphones());
+  return { text: done.text, notice: problemsNotice(done.problems) };
 }

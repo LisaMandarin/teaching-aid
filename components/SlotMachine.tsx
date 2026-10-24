@@ -3,11 +3,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import type { Hanzi } from "@/lib/hanzi";
 import { type Cell, type ParsedWorkbook, attachLocalImages } from "@/lib/lessons";
-import { DEFAULT_SETUP, type ParsedSlots, type Reel, type SlotSetup, downloadSlotTemplate, parseSlots } from "@/lib/slots";
+import { DEFAULT_SETUP, type ParsedSlots, type Reel, type SlotSetup, downloadSlotTemplate, isReel, parseSlots } from "@/lib/slots";
 import { playDing, playReelStop, playSlotSpin } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "slot-machine";
 const MUTE_KEY = "slot-machine-muted";
@@ -106,35 +108,46 @@ export default function SlotMachine() {
   const [muted, setMuted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ParsedSlots | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    let saved: { setup?: SlotSetup; stops?: number[]; held?: boolean[] } | null = null;
-    try {
-      saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
-    const s = saved?.setup?.reels?.length ? { ...DEFAULT_SETUP, ...saved.setup } : DEFAULT_SETUP;
-    const fits = (list: unknown[] | undefined) => list?.length === s.reels.length;
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { setup?: Partial<SlotSetup>; stops?: unknown[]; held?: unknown[] } | null;
+    const reels = saved?.setup?.reels;
+    const setupOk = Array.isArray(reels) && reels.length > 0 && reels.every(isReel);
+    const s: SlotSetup = setupOk
+      ? {
+          fileName: typeof saved!.setup!.fileName === "string" ? saved!.setup!.fileName : null,
+          reels: reels as Reel[],
+          font: isFontId(saved!.setup!.font ?? null) ? saved!.setup!.font! : DEFAULT_SETUP.font,
+        }
+      : DEFAULT_SETUP;
+    const fits = (list: unknown, ok: (x: unknown) => boolean) =>
+      Array.isArray(list) && list.length === s.reels.length && list.every(ok);
     setSetup(s);
-    setStops(fits(saved?.stops) ? saved!.stops!.map((n, i) => mod(n, s.reels[i].cells.length)) : s.reels.map(() => 0));
-    setHeld(fits(saved?.held) ? saved!.held! : s.reels.map(() => false));
+    setStops(
+      fits(saved?.stops, Number.isInteger)
+        ? (saved!.stops as number[]).map((n, i) => mod(n, s.reels[i].cells.length))
+        : s.reels.map(() => 0),
+    );
+    setHeld(fits(saved?.held, (h) => typeof h === "boolean") ? (saved!.held as boolean[]) : s.reels.map(() => false));
+    if (saved !== null && !setupOk) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !setupOk));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
     return () => clearTimeout(flashTimer.current);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ setup, stops, held }));
-      setStorageFull(false);
-    } catch {
-      // Usually the quota: too many images uploaded from the computer.
-      setStorageFull(true);
-    }
+    // Usually fails on the quota: too many images uploaded from the computer.
+    setStorageFull(!writeSaved(STORAGE_KEY, { setup, stops, held }));
   }, [setup, stops, held, loaded]);
 
   useEffect(() => {
@@ -204,27 +217,45 @@ export default function SlotMachine() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseSlots(file);
+      if (run !== importRun.current) return;
       if (parsed.error) setNotice({ lines: [], warnings: [parsed.error, ...parsed.warnings] });
       else if (parsed.localNames.length > 0) setPendingImport(parsed);
       else applyImport(parsed, []);
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
     const lessons: ParsedWorkbook["lessons"] = pendingImport.setup.reels.map((r) => ({ name: r.title, items: r.cells }));
-    const missing = await attachLocalImages(lessons, files);
+    const missing = await attachLocalImages(lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedSlots) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
   };
 
   const cellFont = fontFamilyOf(setup.font);
@@ -278,7 +309,7 @@ export default function SlotMachine() {
               <input
                 type="file"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                hidden
+                className="file-input"
                 disabled={importing || spinning}
                 onChange={(e) => {
                   void importExcel(e.target.files?.[0]);
@@ -304,7 +335,7 @@ export default function SlotMachine() {
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void pickLocalImages([...(e.target.files ?? [])]);
@@ -312,10 +343,10 @@ export default function SlotMachine() {
                 }}
               />
             </label>
-            <button className="btn" onClick={() => applyImport(pendingImport, pendingImport.localNames)}>
+            <button className="btn" onClick={() => skipImages(pendingImport)}>
               略過圖片
             </button>
-            <button className="btn" onClick={() => setPendingImport(null)}>
+            <button className="btn" onClick={cancelImport}>
               取消匯入
             </button>
           </div>
@@ -336,11 +367,12 @@ export default function SlotMachine() {
         </div>
       )}
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，拉霸機的內容沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="拉霸機的內容沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       <Chalkboard className="slots-stage">
         <div className="slot-machine" style={{ "--reels": setup.reels.length } as React.CSSProperties}>

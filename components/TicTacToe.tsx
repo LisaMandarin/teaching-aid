@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
-import { playCheer, playWriting, preloadMarkSounds, setMuted } from "@/lib/sounds";
+import StorageNotice from "./StorageNotice";
+import { playCheer, playWriting, preloadMarkSounds } from "@/lib/sounds";
+import { isStringArray, keepBroken, readSaved, writeSaved } from "@/lib/storage";
+import { typedReadings } from "@/lib/zhuyin";
 import {
   type Cell,
   type Lesson,
@@ -13,6 +16,8 @@ import {
   downloadTemplate,
   drawBoard,
   emptyCell,
+  isCell,
+  isLesson,
   parseWorkbook,
   readImage,
   shuffle,
@@ -76,7 +81,7 @@ export default function TicTacToe() {
   const [starter, setStarter] = useState<Team>(0);
   const [editing, setEditing] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [muted, setMutedState] = useState(false);
+  const [muted, setMuted] = useState(false);
   // Bumped on every win so the confetti remounts and fires again.
   const [celebration, setCelebration] = useState<{ id: number; color: string } | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -84,22 +89,30 @@ export default function TicTacToe() {
   const [lessonIndex, setLessonIndex] = useState<number | null>(null);
   // An imported workbook still waiting for the teacher to pick its local image files.
   const [pendingImport, setPendingImport] = useState<ParsedWorkbook | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const [font, setFont] = useState<FontId>("plain");
 
   // Remember the teacher's board and team names in this browser.
   useEffect(() => {
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { cells?: unknown[]; names?: unknown; lessons?: unknown[]; lessonIndex?: unknown } | null;
+    const cellsOk = Array.isArray(saved?.cells) && saved.cells.length === 9 && saved.cells.every(isCell);
+    if (cellsOk) setCells(saved!.cells as Cell[]);
+    if (isStringArray(saved?.names) && saved.names.length === 2) setNames(saved.names as [string, string]);
+    const savedLessons = Array.isArray(saved?.lessons) ? saved.lessons.filter(isLesson) : [];
+    setLessons(savedLessons);
+    const i = saved?.lessonIndex;
+    if (Number.isInteger(i) && (i as number) >= 0 && (i as number) < savedLessons.length) setLessonIndex(i as number);
+    if (saved !== null && !cellsOk) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !cellsOk));
+    setMuted(readSaved(MUTE_KEY).value === 1);
+    // Saved as the bare id, not JSON.
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.cells?.length === 9) setCells(saved.cells);
-      if (saved?.names?.length === 2) setNames(saved.names);
-      if (Array.isArray(saved?.lessons)) setLessons(saved.lessons);
-      if (typeof saved?.lessonIndex === "number") setLessonIndex(saved.lessonIndex);
-    } catch {}
-    try {
-      setMutedState(localStorage.getItem(MUTE_KEY) === "1");
       const savedFont = localStorage.getItem(FONT_KEY);
       if (isFontId(savedFont)) setFont(savedFont);
     } catch {}
@@ -108,7 +121,6 @@ export default function TicTacToe() {
   }, []);
 
   useEffect(() => {
-    setMuted(muted);
     try {
       localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
     } catch {}
@@ -123,13 +135,8 @@ export default function TicTacToe() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, names, lessons, lessonIndex }));
-      setStorageFull(false);
-    } catch {
-      // Usually the quota: too many images uploaded from the computer.
-      setStorageFull(true);
-    }
+    // Usually fails on the quota: too many images uploaded from the computer.
+    setStorageFull(!writeSaved(STORAGE_KEY, { cells, names, lessons, lessonIndex }));
   }, [cells, names, lessons, lessonIndex, loaded]);
 
   const lesson = lessonIndex !== null ? lessons[lessonIndex] : undefined;
@@ -141,12 +148,12 @@ export default function TicTacToe() {
 
   const place = (i: number) => {
     if (over || marks[i] !== null) return;
-    playWriting();
+    if (!muted) playWriting();
     const next = [...moves, { cell: i, team: turn }];
     setMoves(next);
     setTurn(turn === 0 ? 1 : 0);
     if (findWinner(marksOf(next))) {
-      playCheer();
+      if (!muted) playCheer();
       const color = getComputedStyle(document.documentElement).getPropertyValue(`--team-${turn}`).trim();
       setCelebration((c) => ({ id: (c?.id ?? 0) + 1, color }));
     }
@@ -170,6 +177,15 @@ export default function TicTacToe() {
 
   const updateCell = (i: number, patch: Partial<Cell>) =>
     setCells((prev) => prev.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+
+  // 長[ㄓㄤˇ] typed into a cell becomes 長 with its reading picked, once the teacher leaves the field.
+  const finishText = async (i: number, text: string) => {
+    const done = await typedReadings(text);
+    if (!done) return;
+    // Left alone if it was changed again while the readings were loading.
+    setCells((prev) => prev.map((c, j) => (j === i && c.text === text ? { ...c, text: done.text } : c)));
+    if (done.notice) setNotice({ lines: [], warnings: [done.notice] });
+  };
 
   const setImage = async (i: number, file: File | undefined) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -215,27 +231,45 @@ export default function TicTacToe() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseWorkbook(file);
+      if (run !== importRun.current) return;
       if (parsed.lessons.length === 0)
         setNotice({ lines: [], warnings: ["這個檔案裡找不到題目。請用範本的格式：每個工作表一課，第一列是「文字」「圖片」。"] });
       else if (parsed.localNames.length > 0) setPendingImport(parsed);
       else applyImport(parsed, []);
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
-    const missing = await attachLocalImages(pendingImport.lessons, files);
+    const missing = await attachLocalImages(pendingImport.lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedWorkbook) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
   };
 
 
@@ -304,7 +338,7 @@ export default function TicTacToe() {
           </label>
           <button
             className="btn-tag mute-btn"
-            onClick={() => setMutedState((m) => !m)}
+            onClick={() => setMuted((m) => !m)}
             aria-pressed={muted}
             title={muted ? "開啟音效" : "靜音"}
           >
@@ -323,7 +357,7 @@ export default function TicTacToe() {
             <input
               type="file"
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              hidden
+              className="file-input"
               disabled={importing}
               onChange={(e) => {
                 void importExcel(e.target.files?.[0]);
@@ -350,7 +384,7 @@ export default function TicTacToe() {
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void pickLocalImages([...(e.target.files ?? [])]);
@@ -360,11 +394,11 @@ export default function TicTacToe() {
             </label>
             <button
               className="btn"
-              onClick={() => applyImport(pendingImport, pendingImport.localNames)}
+              onClick={() => skipImages(pendingImport)}
             >
               略過圖片
             </button>
-            <button className="btn" onClick={() => setPendingImport(null)}>
+            <button className="btn" onClick={cancelImport}>
               取消匯入
             </button>
           </div>
@@ -385,11 +419,12 @@ export default function TicTacToe() {
         </div>
       )}
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，題目沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="題目沒有存起來，重新整理後會消失。請改用圖片網址（例如 Dropbox 資料夾），或先用「圖片瘦身」工具縮小圖片。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       <Chalkboard className="ttt-board">
         <p className={`status ttt-status ${winner ? "is-won" : ""}`}>{status}</p>
@@ -416,6 +451,7 @@ export default function TicTacToe() {
                     className={`ttt-input ${textSize(cell.text, !!cell.image)}`}
                     value={cell.text}
                     onChange={(e) => updateCell(i, { text: e.target.value })}
+                    onBlur={(e) => void finishText(i, e.target.value)}
                     onPaste={(e) => {
                       const file = [...e.clipboardData.files].find((f) => f.type.startsWith("image/"));
                       if (file) {
@@ -431,7 +467,7 @@ export default function TicTacToe() {
                     <input
                       type="file"
                       accept="image/*"
-                      hidden
+                      className="file-input"
                       onChange={(e) => {
                         void setImage(i, e.target.files?.[0]);
                         e.target.value = "";
@@ -448,9 +484,19 @@ export default function TicTacToe() {
                   aria-label={`${cell.text || `第 ${i + 1} 格`}${marks[i] !== null ? `（${SYMBOLS[marks[i]]}）` : ""}`}
                 >
                   <span className="ttt-content">
-                    {cell.image && <CellImage key={cell.image} cell={cell} />}
+                    {cell.image ? (
+                      <CellImage key={cell.image} cell={cell} />
+                    ) : (
+                      // A picture from the computer that was skipped at import.
+                      cell.imageName && (
+                        <span className="ttt-img-missing">
+                          ⚠️ 找不到圖片
+                          <small>{cell.imageName}</small>
+                        </span>
+                      )
+                    )}
                     {cell.text && (
-                      <span className={`ttt-text ${textSize(cell.text, !!cell.image)}`}>
+                      <span className={`ttt-text ${textSize(cell.text, !!(cell.image || cell.imageName))}`}>
                         <BoardText text={cell.text} font={font} hanzi={hanzi} />
                       </span>
                     )}

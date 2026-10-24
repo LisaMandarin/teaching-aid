@@ -466,6 +466,23 @@ label.btn-tag {
   }
 }
 
+/* ---------- File pickers ---------- */
+/* The <input type="file"> inside its label: invisible, but still reached with Tab, and Enter or Space opens it. */
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+label:has(.file-input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ---------- Buttons on paper (tools pages, notices) ---------- */
 .btn {
   padding: 10px 20px;
@@ -586,6 +603,31 @@ label.btn-tag {
   /* Sized by height so the whole game fits the viewport (a % width would collapse in the arena's auto column). */
   width: min(56vh, 540px, 50vw);
   aspect-ratio: 1;
+}
+
+/* Phone width: no room for a team on each side, so the board goes on top and the teams side by side under it. */
+@media (max-width: 700px) {
+  .ttt-arena {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .ttt-arena > .ttt-grid {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    width: min(56vh, 100%);
+  }
+
+  .ttt-team-symbol {
+    width: 60px;
+    height: 60px;
+    font-size: 36px;
+  }
+
+  .ttt-team-name {
+    font-size: 18px;
+  }
 }
 
 /* No boxes: the grid is the # drawn in chalk between the cells. */
@@ -909,11 +951,13 @@ label.btn {
   color: var(--muted);
 }
 
-.ttt-cell .ttt-img-missing {
+.ttt-cell .ttt-img-missing,
+.quick-card .ttt-img-missing {
   color: var(--chalk-orange);
 }
 
-.ttt-cell .ttt-img-missing small {
+.ttt-cell .ttt-img-missing small,
+.quick-card .ttt-img-missing small {
   color: var(--chalk-dim);
 }
 
@@ -2236,6 +2280,12 @@ label.btn {
   font-size: clamp(18px, 2vw, 26px);
 }
 
+/* The font picked for the covers; 注音 fonts ship in one weight. */
+.gifts-grid.has-cell-font .gift-name {
+  font-family: var(--cell-font);
+  font-weight: 400;
+}
+
 /* Bomb going off: a fireball where the gift pops out of the box. */
 .gift-boom {
   position: absolute;
@@ -2703,6 +2753,23 @@ label.btn {
   visibility: hidden;
 }
 
+/* Picked with the keyboard, waiting for a blank. */
+.fill-card.is-chosen {
+  outline: 4px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.read-line:focus-visible {
+  outline: 3px solid var(--chalk-yellow);
+  outline-offset: 2px;
+}
+
+.fill-slot[tabindex]:focus-visible {
+  outline: 3px solid var(--chalk-yellow);
+  outline-offset: 2px;
+  background: rgba(242, 214, 117, 0.18);
+}
+
 .fill-card.is-dragging {
   position: fixed;
   z-index: 50;
@@ -2902,6 +2969,9 @@ label.btn {
   flex-direction: column;
   min-height: 190px;
   overflow: hidden;
+  /* The card text is sized in cqmin (shared .ttt-text sizes), so fewer characters show larger.
+     Only the width is contained, so a long question still makes its card taller instead of being cut off. */
+  container-type: inline-size;
   border: 2px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
@@ -2930,27 +3000,16 @@ label.btn {
 }
 
 .quick-card-content img {
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
-  max-height: 118px;
   object-fit: contain;
 }
 
 .quick-card-content p {
   margin: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
-  text-align: center;
   color: var(--chalk);
-  font: 700 28px/1.25 var(--font-board-text);
-}
-
-.quick-deck.has-cell-font .quick-card-content p {
-  font-family: var(--cell-font);
-  font-weight: 400;
-}
-
-.quick-deck[data-font="hans-pinyin"] .quick-card-content p {
-  line-height: 1.55;
 }
 
 .quick-card-content .quick-empty {

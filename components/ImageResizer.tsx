@@ -162,7 +162,7 @@ export default function ImageResizer() {
               type="file"
               accept="image/*"
               multiple
-              hidden
+              className="file-input"
               onChange={(e) => {
                 void add(fromInput(e.target.files));
                 e.target.value = "";
@@ -173,7 +173,7 @@ export default function ImageResizer() {
             📁 選擇資料夾
             <input
               type="file"
-              hidden
+              className="file-input"
               {...{ webkitdirectory: "" }}
               onChange={(e) => {
                 void add(fromInput(e.target.files));
@@ -217,7 +217,7 @@ export default function ImageResizer() {
             type="file"
             accept="image/*"
             multiple
-            hidden
+            className="file-input"
             onChange={(e) => {
               void add(fromInput(e.target.files));
               e.target.value = "";

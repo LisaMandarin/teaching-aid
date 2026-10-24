@@ -7,8 +7,10 @@ import { useEffect, useRef, useState } from "react";
 import { RunText, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import { FolderIcon } from "./Icons";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, isFontId, isHans } from "@/lib/fonts";
 import { type Run, isRuns, mergeRuns, plainText, readDocxFile, setFont, toLines, withReadings } from "@/lib/readAloud";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 import { drawEditor, editorFamily, fontOf, readEditor, readSelection, selectRange } from "@/lib/runEditor";
 
 const STORAGE_KEY = "read-aloud";
@@ -33,16 +35,19 @@ export default function ReadAloud() {
   const [caretFont, setCaretFont] = useState<FontId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
 
   // Pick up where the teacher left off.
   useEffect(() => {
     let start = SAMPLE;
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (isRuns(saved?.runs)) start = mergeRuns(saved.runs);
-      if (isFontId(saved?.baseFont ?? null)) setBaseFont(saved.baseFont);
-      if (SIZES.includes(saved?.size)) setSize(saved.size);
-    } catch {}
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { runs?: unknown; baseFont?: string; size?: number } | null;
+    if (isRuns(saved?.runs)) start = mergeRuns(saved.runs);
+    else if (saved !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !isRuns(saved?.runs)));
+    if (isFontId(saved?.baseFont ?? null)) setBaseFont(saved!.baseFont as FontId);
+    if (SIZES.includes(saved?.size as number)) setSize(saved!.size as number);
     setRuns(start);
     if (editor.current) drawEditor(editor.current, start);
     setLoaded(true);
@@ -50,9 +55,7 @@ export default function ReadAloud() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ runs, baseFont, size }));
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, { runs, baseFont, size }));
   }, [runs, baseFont, size, loaded]);
 
   // Keep the font buttons in step with the selection in the editor.
@@ -84,6 +87,22 @@ export default function ReadAloud() {
   const redraw = (next: Run[]) => {
     setRuns(next);
     if (editor.current) drawEditor(editor.current, next);
+  };
+
+  // 長[ㄓㄤˇ] typed into the editor picks its reading once the teacher leaves it (pasted text already has).
+  const finishTyping = async () => {
+    const root = editor.current;
+    if (!root) return;
+    const before = readEditor(root, baseFont).runs;
+    const text = plainText(before);
+    if (!/[[(（【]/.test(text)) return;
+    const done = await withReadings(before);
+    // Back in the editor (redrawing would move the cursor), or typed on, or a font or blank changed, while the
+    // readings were loading: it's done the next time the editor is left.
+    if (root.contains(document.activeElement)) return;
+    if (JSON.stringify(readEditor(root, baseFont).runs) !== JSON.stringify(before)) return;
+    if (plainText(done.runs) !== text) redraw(done.runs);
+    if (done.notice) setNotice(done.notice);
   };
 
   // The selected words get the font; with nothing selected, the whole text does.
@@ -168,6 +187,13 @@ export default function ReadAloud() {
         </div>
       </header>
 
+      <StorageNotice
+        full={storageFull}
+        fullText="課文沒有存起來，重新整理後會回到上一次存的內容。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
+
       <div className="read-body">
         <Chalkboard className="read-board">
           {plainText(runs).trim() ? (
@@ -177,6 +203,17 @@ export default function ReadAloud() {
                   key={i}
                   className={`read-line ${current === i ? "is-current" : ""} ${line.length === 0 ? "is-blank" : ""}`}
                   onClick={() => line.length > 0 && setCurrent(current === i ? null : i)}
+                  // Marked with Enter or Space too, after Tab to the line.
+                  {...(line.length > 0 && {
+                    role: "button",
+                    tabIndex: 0,
+                    "aria-pressed": current === i,
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      e.preventDefault();
+                      setCurrent(current === i ? null : i);
+                    },
+                  })}
                 >
                   {line.map((run, j) => (
                     <RunText key={j} run={run} hanzi={hanzi} />
@@ -199,7 +236,7 @@ export default function ReadAloud() {
               <input
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                hidden
+                className="file-input"
                 disabled={opening}
                 onChange={(e) => {
                   void openFile(e.target.files?.[0]);
@@ -239,6 +276,7 @@ export default function ReadAloud() {
             style={{ fontFamily: editorFamily(baseFont) }}
             spellCheck={false}
             onInput={readBack}
+            onBlur={() => void finishTyping()}
             onPaste={(e) => void paste(e)}
           />
 

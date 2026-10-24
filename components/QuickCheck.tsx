@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Chalkboard from "./Chalkboard";
-import { BoardText, useHanzi } from "./CellContent";
+import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
+import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
+import { typedReadings } from "@/lib/zhuyin";
 import {
   attachLocalImages,
   downloadQuickCheckTemplate,
+  isCell,
   parseWorkbook,
   readImage,
   shuffle,
@@ -26,7 +30,7 @@ type Mark = "right" | "wrong";
 
 const STORAGE_KEY = "quick-check";
 const MUTE_KEY = "quick-check-muted";
-const RIGHT_SOUND = "/sounds/wow.mp3";
+const RIGHT_SOUND = "/sounds/correct_answer.mp3";
 const WRONG_SOUND = "/sounds/oh%20oh.mp3";
 const starterItems = (): QuickItem[] => [
   { id: "starter-1", text: "早餐", image: null, correct: true },
@@ -34,6 +38,14 @@ const starterItems = (): QuickItem[] => [
   { id: "starter-3", text: "晚餐", image: null, correct: false },
   { id: "starter-4", text: "點心", image: null, correct: false },
 ];
+// Not crypto.randomUUID(): it's missing on plain-http LAN addresses, which classrooms often use.
+const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+// Cards read back from saved data; null if any of them isn't a card. Older saves had no answer, which means Y.
+function itemsFrom(v: unknown): QuickItem[] | null {
+  if (!Array.isArray(v) || !v.every((item) => isCell(item) && typeof (item as QuickItem).id === "string")) return null;
+  return (v as QuickItem[]).map((item) => ({ ...item, correct: item.correct ?? true }));
+}
 
 export default function QuickCheck() {
   const [items, setItems] = useState<QuickItem[]>(starterItems);
@@ -41,25 +53,38 @@ export default function QuickCheck() {
   const [marks, setMarks] = useState<Record<string, Mark>>({});
   const [loaded, setLoaded] = useState(false);
   const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
   const [importing, setImporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<ParsedWorkbook | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [editing, setEditing] = useState(false);
   const [muted, setMuted] = useState(false);
   const [font, setFont] = useState<FontId>("plain");
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (Array.isArray(saved?.items) && saved.items.length > 0)
-        setItems(saved.items.map((item: QuickItem) => ({ ...item, correct: item.correct ?? true })));
-      if (Array.isArray(saved?.deck))
-        setDeck(saved.deck.map((item: QuickItem) => ({ ...item, correct: item.correct ?? true })));
-      if (saved?.marks && typeof saved.marks === "object") setMarks(saved.marks);
-      if (typeof saved?.editing === "boolean") setEditing(saved.editing);
-      if (isFontId(saved?.font ?? null)) setFont(saved.font);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { items?: unknown; deck?: unknown; marks?: unknown; editing?: unknown; font?: string } | null;
+    // An empty saved deck is the teacher's choice; only a first visit gets the starter cards.
+    const savedItems = itemsFrom(saved?.items);
+    if (savedItems) {
+      setItems(savedItems);
+      // The shuffled deck holds the same cards; one that doesn't is dealt again from the cards.
+      const savedDeck = itemsFrom(saved?.deck);
+      const ids = new Set(savedItems.map((item) => item.id));
+      setDeck(savedDeck && savedDeck.every((item) => ids.has(item.id)) ? savedDeck : shuffle(savedItems));
+      if (saved?.marks && typeof saved.marks === "object")
+        setMarks(
+          Object.fromEntries(
+            Object.entries(saved.marks).filter(([id, mark]) => ids.has(id) && (mark === "right" || mark === "wrong")),
+          ),
+        );
+    } else if (saved !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !savedItems));
+    if (typeof saved?.editing === "boolean") setEditing(saved.editing);
+    if (isFontId(saved?.font ?? null)) setFont(saved!.font as FontId);
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
     preloadSoundFile(RIGHT_SOUND);
     preloadSoundFile(WRONG_SOUND);
@@ -67,13 +92,8 @@ export default function QuickCheck() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items, deck, marks, editing, font }));
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-      setStorageFull(false);
-    } catch {
-      setStorageFull(true);
-    }
+    setStorageFull(!writeSaved(STORAGE_KEY, { items, deck, marks, editing, font }));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [items, deck, marks, editing, muted, font, loaded]);
 
   const shownDeck = deck.length > 0 ? deck : items;
@@ -89,7 +109,7 @@ export default function QuickCheck() {
 
   const applyImport = (parsed: ParsedWorkbook, missingImages: string[]) => {
     const imported = parsed.lessons.flatMap((lesson) =>
-      lesson.items.map((item) => ({ ...item, id: crypto.randomUUID(), correct: item.correct ?? true })),
+      lesson.items.map((item) => ({ ...item, id: newId(), correct: item.correct ?? true })),
     );
     setItems(imported);
     setDeck(shuffle(imported));
@@ -103,10 +123,13 @@ export default function QuickCheck() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseWorkbook(file);
+      if (run !== importRun.current) return;
       if (parsed.lessons.length === 0) {
         setNotice({ lines: [], warnings: ["這個檔案裡找不到素材。請用範本格式，第一列填「文字」「圖片」。"] });
       } else if (parsed.localNames.length > 0) {
@@ -115,22 +138,37 @@ export default function QuickCheck() {
         applyImport(parsed, []);
       }
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
-    const missing = await attachLocalImages(pendingImport.lessons, files);
+    const missing = await attachLocalImages(pendingImport.lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
   };
 
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedWorkbook) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
+  };
+
   const addBlank = () => {
-    const next = [...items, { id: crypto.randomUUID(), text: "", image: null, correct: true }];
+    const next = [...items, { id: newId(), text: "", image: null, correct: true }];
     setItems(next);
     setDeck(next);
   };
@@ -139,6 +177,20 @@ export default function QuickCheck() {
     const update = (list: QuickItem[]) => list.map((item) => (item.id === id ? { ...item, ...patch } : item));
     setItems(update);
     setDeck(update);
+    // A changed answer makes the shown ✓/× wrong, so the card goes back to unrevealed.
+    if ("correct" in patch) setMarks(({ [id]: _stale, ...rest }) => rest);
+  };
+
+  // 長[ㄓㄤˇ] typed into a card becomes 長 with its reading picked, once the teacher leaves the field.
+  const finishText = async (id: string, text: string) => {
+    const done = await typedReadings(text);
+    if (!done) return;
+    // Left alone if it was changed again while the readings were loading.
+    const update = (list: QuickItem[]) =>
+      list.map((item) => (item.id === id && item.text === text ? { ...item, text: done.text } : item));
+    setItems(update);
+    setDeck(update);
+    if (done.notice) setNotice({ lines: [], warnings: [done.notice] });
   };
 
   const removeItem = (id: string) => {
@@ -186,11 +238,12 @@ export default function QuickCheck() {
         </div>
       </header>
 
-      {storageFull && (
-        <div className="ttt-notice is-warn">
-          <p>⚠️ 瀏覽器的儲存空間不夠，這次的素材沒有完整存起來。圖片可以先用「圖片瘦身」縮小再匯入。</p>
-        </div>
-      )}
+      <StorageNotice
+        full={storageFull}
+        fullText="這次的素材沒有完整存起來。圖片可以先用「圖片瘦身」縮小再匯入。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
 
       {pendingImport && (
         <div className="ttt-notice is-pending">
@@ -199,13 +252,13 @@ export default function QuickCheck() {
           <div className="ttt-notice-actions">
             <label className="btn btn-primary">
               {importing ? "讀取中…" : "選擇圖片"}
-              <input type="file" accept="image/*" multiple hidden disabled={importing} onChange={(e) => {
+              <input type="file" accept="image/*" multiple className="file-input" disabled={importing} onChange={(e) => {
                 void pickLocalImages([...(e.target.files ?? [])]);
                 e.target.value = "";
               }} />
             </label>
-            <button className="btn" onClick={() => applyImport(pendingImport, pendingImport.localNames)}>略過圖片</button>
-            <button className="btn" onClick={() => setPendingImport(null)}>取消匯入</button>
+            <button className="btn" onClick={() => skipImages(pendingImport)}>略過圖片</button>
+            <button className="btn" onClick={cancelImport}>取消匯入</button>
           </div>
         </div>
       )}
@@ -246,9 +299,18 @@ export default function QuickCheck() {
                 }}
               >
                 <div className="quick-card-content">
-                  {item.image && <img src={item.image} alt="" referrerPolicy="no-referrer" />}
-                  {item.text && <p className="ttt-text"><BoardText text={item.text} font={font} hanzi={hanzi} /></p>}
-                  {!item.image && !item.text && <p className="quick-empty">空白卡</p>}
+                  {item.image ? (
+                    <CellImage key={item.image} cell={item} />
+                  ) : (
+                    item.imageName && (
+                      <span className="ttt-img-missing">
+                        ⚠️ 找不到圖片
+                        <small>{item.imageName}</small>
+                      </span>
+                    )
+                  )}
+                  {item.text && <p className={`ttt-text ${textSize(item.text, Boolean(item.image))}`}><BoardText text={item.text} font={font} hanzi={hanzi} /></p>}
+                  {!item.image && !item.imageName && !item.text && <p className="quick-empty">空白卡</p>}
                 </div>
                 {marks[item.id] && (
                   <span className={`quick-result is-${marks[item.id]}`} aria-hidden="true">
@@ -277,7 +339,7 @@ export default function QuickCheck() {
               <input
                 type="file"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void importExcel(e.target.files?.[0]);
@@ -295,6 +357,7 @@ export default function QuickCheck() {
                 <input
                   value={item.text}
                   onChange={(e) => updateItem(item.id, { text: e.target.value })}
+                  onBlur={(e) => void finishText(item.id, e.target.value)}
                   placeholder="文字"
                   aria-label={`第 ${index + 1} 個素材文字`}
                 />
@@ -312,7 +375,7 @@ export default function QuickCheck() {
                   <input
                     type="file"
                     accept="image/*"
-                    hidden
+                    className="file-input"
                     onChange={(e) => {
                       void setImage(item.id, e.target.files?.[0]);
                       e.target.value = "";

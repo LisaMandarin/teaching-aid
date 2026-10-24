@@ -11,11 +11,13 @@ import { RunText, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
 import { FolderIcon } from "./Icons";
+import StorageNotice from "./StorageNotice";
 import { type Blank, blanksOf, shuffle, slotWidth, toggleBlank, touchesBlank } from "@/lib/fillBlank";
 import { FONTS, type FontId, isFontId, isHans } from "@/lib/fonts";
 import { type Run, isRuns, mergeRuns, plainText, readDocxFile, setFont, toLines, withReadings } from "@/lib/readAloud";
 import { drawEditor, editorFamily, fontOf, readEditor, readSelection, selectRange } from "@/lib/runEditor";
 import { playDing, playSoundFile, playUhOh, preloadSoundFile } from "@/lib/sounds";
+import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "fill-blank";
 const SIZES = [24, 32, 40, 48, 56, 64, 80, 96, 120];
@@ -60,12 +62,16 @@ export default function FillBlank() {
   const [caretFont, setCaretFont] = useState<FontId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
 
   // The game: the cards in their shuffled order, which card is in which blank, and the card dragged now.
   const [order, setOrder] = useState<number[]>([]);
   const [placed, setPlaced] = useState<Record<number, number>>({});
   const [drag, setDrag] = useState<Drag | null>(null);
   const [hoverSlot, setHoverSlot] = useState<number | null>(null);
+  // Without a mouse: the card picked with Enter, waiting for Enter on a blank.
+  const [chosen, setChosen] = useState<number | null>(null);
   // The card that went to the wrong blank, shaken back in the pile; the key restarts the shake.
   const [wrong, setWrong] = useState<{ card: number; key: number } | null>(null);
   const [celebration, setCelebration] = useState<number | null>(null);
@@ -73,14 +79,15 @@ export default function FillBlank() {
   // Pick up where the teacher left off.
   useEffect(() => {
     let start = SAMPLE;
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (isRuns(saved?.runs)) start = mergeRuns(saved.runs);
-      if (isFontId(saved?.baseFont ?? null)) setBaseFont(saved.baseFont);
-      if (SIZES.includes(saved?.size)) setSize(saved.size);
-      if (typeof saved?.editing === "boolean") setEditing(saved.editing);
-      if (typeof saved?.muted === "boolean") setMuted(saved.muted);
-    } catch {}
+    const { value, broken } = readSaved(STORAGE_KEY);
+    const saved = value as { runs?: unknown; baseFont?: string; size?: number; editing?: unknown; muted?: unknown } | null;
+    if (isRuns(saved?.runs)) start = mergeRuns(saved.runs);
+    else if (saved !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(broken || (saved !== null && !isRuns(saved?.runs)));
+    if (isFontId(saved?.baseFont ?? null)) setBaseFont(saved!.baseFont as FontId);
+    if (SIZES.includes(saved?.size as number)) setSize(saved!.size as number);
+    if (typeof saved?.editing === "boolean") setEditing(saved.editing);
+    if (typeof saved?.muted === "boolean") setMuted(saved.muted);
     setRuns(start);
     if (editor.current) drawEditor(editor.current, start);
     setLoaded(true);
@@ -89,9 +96,7 @@ export default function FillBlank() {
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ runs, baseFont, size, editing, muted }));
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, { runs, baseFont, size, editing, muted }));
   }, [runs, baseFont, size, editing, muted, loaded]);
 
   const blanks = blanksOf(runs);
@@ -103,6 +108,7 @@ export default function FillBlank() {
     setOrder(shuffle(blanks.map((b) => b.id)));
     setPlaced({});
     setWrong(null);
+    setChosen(null);
     setCelebration(null);
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,6 +146,22 @@ export default function FillBlank() {
   const redraw = (next: Run[]) => {
     setRuns(next);
     if (editor.current) drawEditor(editor.current, next);
+  };
+
+  // 長[ㄓㄤˇ] typed into the editor picks its reading once the teacher leaves it (pasted text already has).
+  const finishTyping = async () => {
+    const root = editor.current;
+    if (!root) return;
+    const before = readEditor(root, baseFont).runs;
+    const text = plainText(before);
+    if (!/[[(（【]/.test(text)) return;
+    const done = await withReadings(before);
+    // Back in the editor (redrawing would move the cursor), or typed on, or a font or blank changed, while the
+    // readings were loading: it's done the next time the editor is left.
+    if (root.contains(document.activeElement)) return;
+    if (JSON.stringify(readEditor(root, baseFont).runs) !== JSON.stringify(before)) return;
+    if (plainText(done.runs) !== text) redraw(done.runs);
+    if (done.notice) setNotice(done.notice);
   };
 
   // The selected words get the font; with nothing selected, the whole text does.
@@ -229,10 +251,12 @@ export default function FillBlank() {
     const box = e.currentTarget.getBoundingClientRect();
     setDrag({ card, pointer: e.pointerId, x: e.clientX, y: e.clientY, dx: e.clientX - box.left, dy: e.clientY - box.top });
     setWrong(null);
+    // Dragging a card replaces picking one with the keyboard.
+    setChosen(null);
   };
 
   const drop = (card: number, slot: number | null) => {
-    if (slot === null || placed[slot] !== undefined) return;
+    if (slot === null || placed[slot] !== undefined || Object.values(placed).includes(card)) return;
     if (byId.get(card)?.answer === byId.get(slot)?.answer) {
       const next = { ...placed, [slot]: card };
       setPlaced(next);
@@ -244,6 +268,27 @@ export default function FillBlank() {
       setWrong({ card, key: Date.now() });
       if (!muted) playUhOh();
     }
+  };
+
+  // A card picked with the keyboard: go to the first empty blank (the blanks come before the cards on the page).
+  useEffect(() => {
+    if (chosen !== null) document.querySelector<HTMLElement>(".fill-slot[tabindex]")?.focus();
+  }, [chosen]);
+
+  // Back to the cards afterwards: the same card if it's still in the pile (a wrong blank, or Escape), else the next.
+  const backToCards = (card: number) =>
+    requestAnimationFrame(() =>
+      (
+        document.querySelector<HTMLElement>(`.fill-card[data-card="${card}"]`) ??
+        document.querySelector<HTMLElement>(".fill-card")
+      )?.focus(),
+    );
+
+  const placeChosen = (slot: number) => {
+    if (chosen === null) return;
+    drop(chosen, slot);
+    setChosen(null);
+    backToCards(chosen);
   };
 
   useEffect(() => {
@@ -294,11 +339,28 @@ export default function FillBlank() {
     return parts.map((p, j) => {
       if (!("id" in p)) return <RunText key={j} run={p} hanzi={hanzi} />;
       const card = placed[p.id];
+      // An empty blank takes the card picked with the keyboard.
+      const target = chosen !== null && card === undefined;
       return (
         <span
           key={j}
           data-slot={p.id}
           className={`fill-slot ${card !== undefined ? "is-filled" : ""} ${hoverSlot === p.id ? "is-hover" : ""}`}
+          {...(target && {
+            role: "button",
+            tabIndex: 0,
+            "aria-label": "空格，按 Enter 放入選取的單字卡",
+            onClick: () => placeChosen(p.id),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                placeChosen(p.id);
+              } else if (e.key === "Escape" && chosen !== null) {
+                setChosen(null);
+                backToCards(chosen);
+              }
+            },
+          })}
         >
           {card !== undefined && <CardText blank={byId.get(card)!} hanzi={hanzi} />}
         </span>
@@ -341,6 +403,13 @@ export default function FillBlank() {
         </div>
       </header>
 
+      <StorageNotice
+        full={storageFull}
+        fullText="課文沒有存起來，重新整理後會回到上一次存的內容。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
+
       <div className="read-body">
         <div className="fill-main">
           <Chalkboard className="read-board">
@@ -369,10 +438,15 @@ export default function FillBlank() {
               pile.map((id) => (
                 <button
                   key={wrong?.card === id ? `${id}-${wrong.key}` : id}
-                  className={`fill-card paper ${drag?.card === id ? "is-lifted" : ""} ${wrong?.card === id ? "is-wrong" : ""}`}
+                  className={`fill-card paper ${drag?.card === id ? "is-lifted" : ""} ${wrong?.card === id ? "is-wrong" : ""} ${chosen === id ? "is-chosen" : ""}`}
                   style={{ rotate: `${tilt(id)}deg` }}
                   onPointerDown={(e) => pickUp(e, id)}
-                  aria-label={`單字卡：${byId.get(id)!.answer}`}
+                  // detail 0: pressed with Enter or Space, not clicked (a click is the end of a drag).
+                  onClick={(e) => e.detail === 0 && setChosen((c) => (c === id ? null : id))}
+                  onKeyDown={(e) => e.key === "Escape" && setChosen(null)}
+                  aria-pressed={chosen === id}
+                  data-card={id}
+                  aria-label={`單字卡：${byId.get(id)!.answer}。按 Enter 選取，再到空格按 Enter 放入`}
                 >
                   <CardText blank={byId.get(id)!} hanzi={hanzi} />
                 </button>
@@ -392,7 +466,7 @@ export default function FillBlank() {
               <input
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                hidden
+                className="file-input"
                 disabled={opening}
                 onChange={(e) => {
                   void openFile(e.target.files?.[0]);
@@ -441,6 +515,7 @@ export default function FillBlank() {
             style={{ fontFamily: editorFamily(baseFont) }}
             spellCheck={false}
             onInput={readBack}
+            onBlur={() => void finishTyping()}
             onPaste={(e) => void paste(e)}
           />
 

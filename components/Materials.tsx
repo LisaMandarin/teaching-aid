@@ -114,7 +114,7 @@ export default function Materials() {
               type="file"
               accept="application/pdf,.pdf,image/*"
               multiple
-              hidden
+              className="file-input"
               disabled={busy}
               onChange={(e) => {
                 void upload([...(e.target.files ?? [])]);

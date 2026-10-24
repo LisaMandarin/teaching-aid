@@ -37,13 +37,26 @@ const CLASS_DATA_KEYS = [
 
 async function clearClassData() {
   if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空、快判卡、拉霸機、抽牌的內容，剪刀石頭布的隊名和分數，立可拍的照片和文字，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
-  try {
-    CLASS_DATA_KEYS.forEach((key) => localStorage.removeItem(key));
-  } catch {}
-  try {
-    await clearPhotos();
-  } catch {}
-  // Every game is kept mounted, so reload to make them all start empty.
+  for (;;) {
+    const failed: string[] = [];
+    try {
+      // `:broken` holds saved data a game couldn't read; it's class data too.
+      CLASS_DATA_KEYS.forEach((key) => {
+        localStorage.removeItem(key);
+        localStorage.removeItem(`${key}:broken`);
+      });
+    } catch {
+      failed.push("遊戲設定");
+    }
+    try {
+      await clearPhotos();
+    } catch {
+      failed.push("立可拍的照片");
+    }
+    if (failed.length === 0) break;
+    if (!confirm(`${failed.join("和")}沒有清除成功。要再試一次嗎？\n\n如果一直失敗，請關掉其他開著這個網站的分頁再試。`)) break;
+  }
+  // Every game is kept mounted, so reload to make them all start empty (and show what's left if something failed).
   location.reload();
 }
 

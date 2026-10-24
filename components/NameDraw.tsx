@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Chalkboard from "./Chalkboard";
+import { BoardText, useHanzi } from "./CellContent";
 import DropZone from "./DropZone";
+import StorageNotice from "./StorageNotice";
 import { DownloadIcon, FolderIcon, RefreshIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { downloadNamesTemplate, parseNames } from "@/lib/draw";
+import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { playDing, playRattle } from "@/lib/sounds";
+import { visibleLength } from "@/lib/zhuyin";
+import { isStringArray, keepBroken, readSaved, validIndexes, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "draw-list";
 const MUTE_KEY = "draw-muted";
@@ -14,6 +19,21 @@ const SHAKE_MS = 1200;
 const STICK_MS = 1000;
 
 const isExcel = (f: File) => /\.xlsx$/i.test(f.name);
+
+// A list read back from saved data; bad indexes are dropped and older saves get today's defaults.
+function listFrom(v: unknown): List | null {
+  const l = v as List;
+  if (!isStringArray(l?.names)) return null;
+  return {
+    fileName: typeof l.fileName === "string" ? l.fileName : "",
+    names: l.names,
+    // Drawn again when 抽過的不再抽 is off, so a name can be in the history more than once.
+    history: validIndexes(l.history, l.names.length, false),
+    absent: validIndexes(l.absent, l.names.length, true),
+    noRepeat: typeof l.noRepeat === "boolean" ? l.noRepeat : true,
+    font: isFontId(l.font ?? null) ? l.font : "plain",
+  };
+}
 
 type List = {
   fileName: string;
@@ -24,6 +44,8 @@ type List = {
   absent: number[];
   // Put each drawn stick aside so nobody is called twice until 重新開始.
   noRepeat: boolean;
+  // How the names are shown on the board.
+  font: FontId;
 };
 
 // One fortune stick: a wooden body with a pointed red tip, standing on its bottom at y = 230,
@@ -33,7 +55,7 @@ function Stick({ x, top, name }: { x: number; top: number; name: string }) {
   const tip = 32;
   const body = 230 - top - tip;
   // Shrink long names so they fit on the body.
-  const size = Math.min(13, (body - 12) / Math.max(name.length, 1));
+  const size = Math.min(13, (body - 12) / Math.max(visibleLength(name), 1));
   return (
     <>
       <rect className="stick-body" x={x - w / 2} y={top + tip - 2} width={w} height={body + 2} rx="2" strokeWidth="1" />
@@ -107,24 +129,31 @@ export default function NameDraw() {
   const [flicker, setFlicker] = useState("");
   // Bumped on every draw so the stick animation replays.
   const [drawCount, setDrawCount] = useState(0);
+  const [storageFull, setStorageFull] = useState(false);
+  const [savedBroken, setSavedBroken] = useState(false);
+  // The running draw's flicker and timeouts, cleared when a new list replaces the one being drawn from.
+  const drawTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Bumped by each file opened, so a slower earlier file can't replace a later one.
+  const openRun = useRef(0);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Kept in the browser so a reload in the middle of class doesn't put everyone back in the cup.
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.names) setList(saved);
-      setMuted(localStorage.getItem(MUTE_KEY) === "1");
-    } catch {}
+    const saved = readSaved(STORAGE_KEY);
+    const savedList = listFrom(saved.value);
+    if (savedList) setList(savedList);
+    else if (saved.value !== null) keepBroken(STORAGE_KEY);
+    setSavedBroken(saved.broken || (saved.value !== null && !savedList));
+    setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
+    // Read at unmount: each draw puts its own timers in the ref.
+    return () => drawTimers.current.forEach(clearTimeout);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-    try {
-      if (list) localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      else localStorage.removeItem(STORAGE_KEY);
-      localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
-    } catch {}
+    setStorageFull(!writeSaved(STORAGE_KEY, list));
+    writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [list, muted, loaded]);
 
   const pool = list
@@ -132,19 +161,45 @@ export default function NameDraw() {
         .map((_, i) => i)
         .filter((i) => !list.absent.includes(i) && !(list.noRepeat && list.history.includes(i)))
     : [];
+  const font = list?.font ?? "plain";
+  const setFont = (f: FontId) => setList((l) => l && { ...l, font: f });
+  const hanzi = useHanzi(font);
+  const family = fontFamilyOf(font);
+  const nameStyle = family ? { fontFamily: `${family}, var(--font-board-text)`, fontWeight: 400 } : undefined;
+
   const current = list && list.history.length > 0 ? list.names[list.history[list.history.length - 1]] : null;
+
+  // Stops a draw in progress without picking anyone.
+  const stopDraw = () => {
+    drawTimers.current.forEach(clearTimeout);
+    drawTimers.current = [];
+    setShaking(false);
+    setFlicker("");
+  };
 
   const open = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++openRun.current;
     setError("");
     if (!isExcel(file)) return setError("請選擇 Excel 檔（.xlsx）。");
     try {
-      const { names, warnings } = await parseNames(file);
+      const { names, font, warnings } = await parseNames(file);
+      if (run !== openRun.current) return;
       if (names.length === 0) return setError("檔案裡找不到名字。第一列寫「學生」，從第二列開始每列一位學生。");
-      setList({ fileName: file.name, names, history: [], absent: [], noRepeat: list?.noRepeat ?? true });
+      // A draw from the old list would land on an index of the new one.
+      stopDraw();
+      // A file without a 字型 setting keeps the font in use now.
+      setList({
+        fileName: file.name,
+        names,
+        history: [],
+        absent: [],
+        noRepeat: list?.noRepeat ?? true,
+        font: font ?? list?.font ?? "plain",
+      });
       setWarnings(warnings);
     } catch {
-      setError("這個 Excel 檔讀不出來，請確認檔案沒有損壞。");
+      if (run === openRun.current) setError("這個 Excel 檔讀不出來，請確認檔案沒有損壞。");
     }
   };
 
@@ -156,15 +211,19 @@ export default function NameDraw() {
 
     const names = pool.map((i) => list.names[i]);
     const flip = setInterval(() => setFlicker(names[Math.floor(Math.random() * names.length)]), 80);
-    setTimeout(() => {
+    const land = setTimeout(() => {
       clearInterval(flip);
       setShaking(false);
       setFlicker("");
       setList((l) => l && { ...l, history: [...l.history, pick] });
       setDrawCount((n) => n + 1);
       // Chime when the stick lands in front of the cup.
-      if (!muted) setTimeout(playDing, STICK_MS);
+      // Not if the teacher has gone to another page by then (the game stays mounted there).
+      if (!muted)
+        drawTimers.current.push(setTimeout(() => rootRef.current?.checkVisibility() && playDing(), STICK_MS));
     }, SHAKE_MS);
+    // clearTimeout also clears an interval.
+    drawTimers.current = [flip, land];
   };
 
   const toggleAbsent = (i: number) =>
@@ -184,7 +243,7 @@ export default function NameDraw() {
       <input
         type="file"
         accept=".xlsx"
-        hidden
+        className="file-input"
         disabled={shaking}
         onChange={(e) => {
           void open(e.target.files?.[0]);
@@ -196,6 +255,7 @@ export default function NameDraw() {
 
   return (
     <div
+      ref={rootRef}
       className={`game draw ${dragging ? "is-dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
@@ -214,6 +274,16 @@ export default function NameDraw() {
         <h1 className="page-title">抽籤筒</h1>
         {list && (
           <div className="page-tools">
+          <label className="tag-field">
+            名字字型
+            <select className="select-tag" value={font} onChange={(e) => isFontId(e.target.value) && setFont(e.target.value)}>
+              {FONTS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
             <button
               className="btn-tag mute-btn"
               onClick={() => setMuted((m) => !m)}
@@ -228,6 +298,12 @@ export default function NameDraw() {
         )}
       </header>
 
+      <StorageNotice
+        full={storageFull}
+        fullText="抽籤的進度沒有存起來，重新整理後會回到上一次存的狀態。"
+        broken={savedBroken}
+        onCloseBroken={() => setSavedBroken(false)}
+      />
       {error && (
         <div className="ttt-notice is-warn">
           <button className="ttt-notice-close" onClick={() => setError("")} aria-label="關閉">
@@ -255,7 +331,7 @@ export default function NameDraw() {
             <input
               type="file"
               accept=".xlsx"
-              hidden
+              className="file-input"
               onChange={(e) => {
                 void open(e.target.files?.[0]);
                 e.target.value = "";
@@ -272,11 +348,15 @@ export default function NameDraw() {
           <Chalkboard className="draw-stage">
             <div className={`draw-result ${shaking ? "is-flicker" : ""}`} aria-live="polite">
               {shaking ? (
-                <span className="draw-flicker">{flicker}</span>
+                <span className="draw-flicker" style={nameStyle}>
+                  <BoardText text={flicker} font={font} hanzi={hanzi} />
+                </span>
               ) : current ? (
                 <span key={drawCount} className="draw-picked">
                   <span className="draw-order">第 {list.history.length} 位</span>
-                  <span className="draw-name">{current}</span>
+                  <span className="draw-name" style={nameStyle}>
+                    <BoardText text={current} font={font} hanzi={hanzi} />
+                  </span>
                   <span className="draw-underline chalk-line" aria-hidden="true" />
                 </span>
               ) : (
