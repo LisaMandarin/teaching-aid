@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Chalkboard from "./Chalkboard";
-import { BoardText, useHanzi } from "./CellContent";
+import { BoardText, textSize, useHanzi } from "./CellContent";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
 import {
@@ -247,7 +247,7 @@ export default function QuickCheck() {
               >
                 <div className="quick-card-content">
                   {item.image && <img src={item.image} alt="" referrerPolicy="no-referrer" />}
-                  {item.text && <p className="ttt-text"><BoardText text={item.text} font={font} hanzi={hanzi} /></p>}
+                  {item.text && <p className={`ttt-text ${textSize(item.text, Boolean(item.image))}`}><BoardText text={item.text} font={font} hanzi={hanzi} /></p>}
                   {!item.image && !item.text && <p className="quick-empty">空白卡</p>}
                 </div>
                 {marks[item.id] && (

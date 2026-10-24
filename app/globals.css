@@ -2902,6 +2902,9 @@ label.btn {
   flex-direction: column;
   min-height: 190px;
   overflow: hidden;
+  /* The card text is sized in cqmin (shared .ttt-text sizes), so fewer characters show larger.
+     Only the width is contained, so a long question still makes its card taller instead of being cut off. */
+  container-type: inline-size;
   border: 2px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
@@ -2930,27 +2933,16 @@ label.btn {
 }
 
 .quick-card-content img {
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
-  max-height: 118px;
   object-fit: contain;
 }
 
 .quick-card-content p {
   margin: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
-  text-align: center;
   color: var(--chalk);
-  font: 700 28px/1.25 var(--font-board-text);
-}
-
-.quick-deck.has-cell-font .quick-card-content p {
-  font-family: var(--cell-font);
-  font-weight: 400;
-}
-
-.quick-deck[data-font="hans-pinyin"] .quick-card-content p {
-  line-height: 1.55;
 }
 
 .quick-card-content .quick-empty {
