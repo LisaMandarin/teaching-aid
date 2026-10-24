@@ -113,7 +113,14 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className={`sidebar cork cork--sidebar ${open ? "is-open" : "is-closed"}`}>
+      <aside
+        className={`sidebar cork cork--sidebar ${open ? "is-open" : "is-closed"}`}
+        // On a phone the open sidebar covers the page: tabbing out of it closes it, so the focused control is visible.
+        onBlur={(e) => {
+          if (open && isNarrow() && e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget))
+            setOpen(false);
+        }}
+      >
         <div className="sidebar-head">
           {open && (
             <p className="sidebar-logo paper">
