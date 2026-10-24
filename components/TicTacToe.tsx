@@ -5,7 +5,7 @@ import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
 import StorageNotice from "./StorageNotice";
-import { playCheer, playWriting, preloadMarkSounds, setMuted } from "@/lib/sounds";
+import { playCheer, playWriting, preloadMarkSounds } from "@/lib/sounds";
 import { isStringArray, keepBroken, readSaved, writeSaved } from "@/lib/storage";
 import { typedReadings } from "@/lib/zhuyin";
 import {
@@ -81,7 +81,7 @@ export default function TicTacToe() {
   const [starter, setStarter] = useState<Team>(0);
   const [editing, setEditing] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [muted, setMutedState] = useState(false);
+  const [muted, setMuted] = useState(false);
   // Bumped on every win so the confetti remounts and fires again.
   const [celebration, setCelebration] = useState<{ id: number; color: string } | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -110,7 +110,7 @@ export default function TicTacToe() {
     if (Number.isInteger(i) && (i as number) >= 0 && (i as number) < savedLessons.length) setLessonIndex(i as number);
     if (saved !== null && !cellsOk) keepBroken(STORAGE_KEY);
     setSavedBroken(broken || (saved !== null && !cellsOk));
-    setMutedState(readSaved(MUTE_KEY).value === 1);
+    setMuted(readSaved(MUTE_KEY).value === 1);
     // Saved as the bare id, not JSON.
     try {
       const savedFont = localStorage.getItem(FONT_KEY);
@@ -121,7 +121,6 @@ export default function TicTacToe() {
   }, []);
 
   useEffect(() => {
-    setMuted(muted);
     try {
       localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
     } catch {}
@@ -149,12 +148,12 @@ export default function TicTacToe() {
 
   const place = (i: number) => {
     if (over || marks[i] !== null) return;
-    playWriting();
+    if (!muted) playWriting();
     const next = [...moves, { cell: i, team: turn }];
     setMoves(next);
     setTurn(turn === 0 ? 1 : 0);
     if (findWinner(marksOf(next))) {
-      playCheer();
+      if (!muted) playCheer();
       const color = getComputedStyle(document.documentElement).getPropertyValue(`--team-${turn}`).trim();
       setCelebration((c) => ({ id: (c?.id ?? 0) + 1, color }));
     }
@@ -339,7 +338,7 @@ export default function TicTacToe() {
           </label>
           <button
             className="btn-tag mute-btn"
-            onClick={() => setMutedState((m) => !m)}
+            onClick={() => setMuted((m) => !m)}
             aria-pressed={muted}
             title={muted ? "開啟音效" : "靜音"}
           >
@@ -358,7 +357,7 @@ export default function TicTacToe() {
             <input
               type="file"
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              hidden
+              className="file-input"
               disabled={importing}
               onChange={(e) => {
                 void importExcel(e.target.files?.[0]);
@@ -385,7 +384,7 @@ export default function TicTacToe() {
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void pickLocalImages([...(e.target.files ?? [])]);
@@ -468,7 +467,7 @@ export default function TicTacToe() {
                     <input
                       type="file"
                       accept="image/*"
-                      hidden
+                      className="file-input"
                       onChange={(e) => {
                         void setImage(i, e.target.files?.[0]);
                         e.target.value = "";

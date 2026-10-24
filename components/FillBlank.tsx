@@ -70,6 +70,8 @@ export default function FillBlank() {
   const [placed, setPlaced] = useState<Record<number, number>>({});
   const [drag, setDrag] = useState<Drag | null>(null);
   const [hoverSlot, setHoverSlot] = useState<number | null>(null);
+  // Without a mouse: the card picked with Enter, waiting for Enter on a blank.
+  const [chosen, setChosen] = useState<number | null>(null);
   // The card that went to the wrong blank, shaken back in the pile; the key restarts the shake.
   const [wrong, setWrong] = useState<{ card: number; key: number } | null>(null);
   const [celebration, setCelebration] = useState<number | null>(null);
@@ -263,6 +265,27 @@ export default function FillBlank() {
     }
   };
 
+  // A card picked with the keyboard: go to the first empty blank (the blanks come before the cards on the page).
+  useEffect(() => {
+    if (chosen !== null) document.querySelector<HTMLElement>(".fill-slot[tabindex]")?.focus();
+  }, [chosen]);
+
+  // Back to the cards afterwards: the same card if it's still in the pile (a wrong blank, or Escape), else the next.
+  const backToCards = (card: number) =>
+    requestAnimationFrame(() =>
+      (
+        document.querySelector<HTMLElement>(`.fill-card[data-card="${card}"]`) ??
+        document.querySelector<HTMLElement>(".fill-card")
+      )?.focus(),
+    );
+
+  const placeChosen = (slot: number) => {
+    if (chosen === null) return;
+    drop(chosen, slot);
+    setChosen(null);
+    backToCards(chosen);
+  };
+
   useEffect(() => {
     if (!drag) return;
     const move = (e: PointerEvent) => {
@@ -311,11 +334,28 @@ export default function FillBlank() {
     return parts.map((p, j) => {
       if (!("id" in p)) return <RunText key={j} run={p} hanzi={hanzi} />;
       const card = placed[p.id];
+      // An empty blank takes the card picked with the keyboard.
+      const target = chosen !== null && card === undefined;
       return (
         <span
           key={j}
           data-slot={p.id}
           className={`fill-slot ${card !== undefined ? "is-filled" : ""} ${hoverSlot === p.id ? "is-hover" : ""}`}
+          {...(target && {
+            role: "button",
+            tabIndex: 0,
+            "aria-label": "空格，按 Enter 放入選取的單字卡",
+            onClick: () => placeChosen(p.id),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                placeChosen(p.id);
+              } else if (e.key === "Escape" && chosen !== null) {
+                setChosen(null);
+                backToCards(chosen);
+              }
+            },
+          })}
         >
           {card !== undefined && <CardText blank={byId.get(card)!} hanzi={hanzi} />}
         </span>
@@ -393,10 +433,15 @@ export default function FillBlank() {
               pile.map((id) => (
                 <button
                   key={wrong?.card === id ? `${id}-${wrong.key}` : id}
-                  className={`fill-card paper ${drag?.card === id ? "is-lifted" : ""} ${wrong?.card === id ? "is-wrong" : ""}`}
+                  className={`fill-card paper ${drag?.card === id ? "is-lifted" : ""} ${wrong?.card === id ? "is-wrong" : ""} ${chosen === id ? "is-chosen" : ""}`}
                   style={{ rotate: `${tilt(id)}deg` }}
                   onPointerDown={(e) => pickUp(e, id)}
-                  aria-label={`單字卡：${byId.get(id)!.answer}`}
+                  // detail 0: pressed with Enter or Space, not clicked (a click is the end of a drag).
+                  onClick={(e) => e.detail === 0 && setChosen((c) => (c === id ? null : id))}
+                  onKeyDown={(e) => e.key === "Escape" && setChosen(null)}
+                  aria-pressed={chosen === id}
+                  data-card={id}
+                  aria-label={`單字卡：${byId.get(id)!.answer}。按 Enter 選取，再到空格按 Enter 放入`}
                 >
                   <CardText blank={byId.get(id)!} hanzi={hanzi} />
                 </button>
@@ -416,7 +461,7 @@ export default function FillBlank() {
               <input
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                hidden
+                className="file-input"
                 disabled={opening}
                 onChange={(e) => {
                   void openFile(e.target.files?.[0]);

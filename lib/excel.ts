@@ -1,6 +1,8 @@
 // Excel templates with drop-down lists. write-excel-file has no data validation, so the
 // dropdowns are added to its output afterwards by editing the sheets' XML.
 
+import { FONTS, type FontId, fontFromSetting } from "./fonts";
+
 type SheetData = Parameters<typeof import("write-excel-file/browser").default>[0];
 
 export type Dropdown = {
@@ -67,4 +69,89 @@ export async function saveWorkbook(
   a.download = fileName;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ---------- Reading a class list ----------
+
+type ReadSheet = { sheet: string; data: unknown[][] };
+
+const cellText = (v: unknown) => (v === null || v === undefined ? "" : String(v).trim());
+
+// Sheets that explain the template rather than hold its data, e.g. 說明 or 學生名單匯入說明.
+const NOT_DATA = /說明|設定|選項/;
+// A header is a short label; a longer cell is a sentence that happens to mention it (請在這裡填學生…).
+const HEADER_MAX = 8;
+
+// The rows of the sheet holding a class list (抽籤筒, 我的獎勵): the first one whose header row has a
+// `header` label, else the first with something in it. Help and settings sheets are skipped unless
+// there's nothing else; blank rows are dropped.
+export function rosterRows(sheets: ReadSheet[], header: RegExp): unknown[][] {
+  const filled = (list: ReadSheet[]) =>
+    list.map((s) => s.data.filter((row) => row.some((v) => cellText(v) !== ""))).filter((rows) => rows.length > 0);
+  const data = filled(sheets.filter((s) => !NOT_DATA.test(s.sheet)));
+  if (data.length === 0) return filled(sheets)[0] ?? [];
+  const isHeader = (v: unknown) => cellText(v).length <= HEADER_MAX && header.test(cellText(v));
+  return data.find((rows) => rows[0].some(isHeader)) ?? data[0];
+}
+
+const SETTINGS_SHEET = "設定";
+const OPTIONS_SHEET = "選項";
+const FONT_LABEL = "字型";
+const bold = { fontWeight: "bold", backgroundColor: "#fef3c7" } as const;
+
+// The 字型 picked on a class list's 設定 sheet; undefined if there's none (or it can't be read, with a warning).
+export function rosterFont(sheets: ReadSheet[], warnings: string[]): FontId | undefined {
+  const settings = sheets.find((s) => s.sheet.trim() === SETTINGS_SHEET);
+  for (const row of settings?.data ?? []) {
+    const value = cellText(row[1]);
+    if (!cellText(row[0]).includes(FONT_LABEL) || !value) continue;
+    const font = fontFromSetting(value);
+    if (!font) warnings.push(`「設定」的字型「${value}」看不懂，可以填：${FONTS.map((f) => f.name).join("、")}。`);
+    return font;
+  }
+  return undefined;
+}
+
+type Row = NonNullable<Parameters<typeof saveWorkbook>[0][number]["data"]>[number];
+
+// A class list workbook in the shared template shape: 說明, 設定 (字型 dropdown), the list, hidden 選項.
+export function saveRosterWorkbook(book: {
+  help: string[];
+  sheet: string;
+  columns: { width: number }[];
+  header: string[];
+  rows: Row[];
+  font: FontId;
+  fileName: string;
+}) {
+  return saveWorkbook(
+    [
+      {
+        sheet: "說明",
+        columns: [{ width: 90 }],
+        data: book.help.map((line, i) => [i === 0 ? { value: line, fontWeight: "bold" as const, fontSize: 16 } : line]),
+      },
+      {
+        sheet: SETTINGS_SHEET,
+        columns: [{ width: 16 }, { width: 40 }],
+        data: [
+          [{ value: "項目", ...bold }, { value: "內容", ...bold }],
+          [FONT_LABEL, FONTS.find((f) => f.id === book.font)!.name],
+          ["", "↑ 名字在黑板上用的字型（可選注音、簡體、漢語拼音）"],
+        ],
+      },
+      {
+        sheet: book.sheet,
+        columns: book.columns,
+        stickyRowsCount: 1,
+        data: [book.header.map((h) => ({ value: h, ...bold })), ...book.rows],
+      },
+      { sheet: OPTIONS_SHEET, data: [[{ value: FONT_LABEL, ...bold }], ...FONTS.map((f) => [f.name])] },
+    ],
+    book.fileName,
+    {
+      dropdowns: [{ sheet: SETTINGS_SHEET, range: "B2", source: listRef(OPTIONS_SHEET, "A", 2, FONTS.length + 1) }],
+      hidden: [OPTIONS_SHEET],
+    },
+  );
 }

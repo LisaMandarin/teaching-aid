@@ -82,9 +82,10 @@ export default function RockPaperScissors() {
   useEffect(() => {
     if (!shuffling) return;
     const timer = setInterval(() => {
+      // Paused and quiet while the teacher is on another page (the game stays mounted there).
+      if (!rootRef.current?.checkVisibility()) return;
       setHands((h) => [randomHand(h?.[0]), randomHand(h?.[1])]);
-      // Quiet while the teacher is on another page (the game stays mounted there).
-      if (!muted && rootRef.current?.checkVisibility()) playHandTick();
+      if (!muted) playHandTick();
     }, SHUFFLE_MS);
     return () => clearInterval(timer);
   }, [shuffling, muted]);

@@ -485,7 +485,7 @@ export default function CardDraw() {
               <input
                 type="file"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                hidden
+                className="file-input"
                 disabled={importing || shuffling.length > 0}
                 onChange={(e) => {
                   void importExcel(e.target.files?.[0]);
@@ -516,7 +516,7 @@ export default function CardDraw() {
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void pickLocalImages([...(e.target.files ?? [])]);

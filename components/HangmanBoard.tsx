@@ -25,9 +25,10 @@ type Props = {
   onLabelChange?: (label: string) => void;
   // In PK mode, the board whose opponent died has won and is frozen.
   won?: boolean;
+  muted: boolean;
 };
 
-export default function HangmanBoard({ count, onChange, label, onLabelChange, won = false }: Props) {
+export default function HangmanBoard({ count, onChange, label, onLabelChange, won = false, muted }: Props) {
   const dead = count >= MAX_STROKES;
 
   return (
@@ -74,7 +75,7 @@ export default function HangmanBoard({ count, onChange, label, onLabelChange, wo
 
       <div className="controls">
         <button className="btn-chalk" onClick={() => {
-          playStrokeSound(count + 1, MAX_STROKES);
+          if (!muted) playStrokeSound(count + 1, MAX_STROKES);
           onChange(count + 1);
         }} disabled={dead || won}>
           多一筆

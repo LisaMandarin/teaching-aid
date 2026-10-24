@@ -252,7 +252,7 @@ export default function QuickCheck() {
           <div className="ttt-notice-actions">
             <label className="btn btn-primary">
               {importing ? "讀取中…" : "選擇圖片"}
-              <input type="file" accept="image/*" multiple hidden disabled={importing} onChange={(e) => {
+              <input type="file" accept="image/*" multiple className="file-input" disabled={importing} onChange={(e) => {
                 void pickLocalImages([...(e.target.files ?? [])]);
                 e.target.value = "";
               }} />
@@ -339,7 +339,7 @@ export default function QuickCheck() {
               <input
                 type="file"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void importExcel(e.target.files?.[0]);
@@ -375,7 +375,7 @@ export default function QuickCheck() {
                   <input
                     type="file"
                     accept="image/*"
-                    hidden
+                    className="file-input"
                     onChange={(e) => {
                       void setImage(item.id, e.target.files?.[0]);
                       e.target.value = "";

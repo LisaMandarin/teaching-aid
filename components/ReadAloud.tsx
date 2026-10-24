@@ -201,6 +201,17 @@ export default function ReadAloud() {
                   key={i}
                   className={`read-line ${current === i ? "is-current" : ""} ${line.length === 0 ? "is-blank" : ""}`}
                   onClick={() => line.length > 0 && setCurrent(current === i ? null : i)}
+                  // Marked with Enter or Space too, after Tab to the line.
+                  {...(line.length > 0 && {
+                    role: "button",
+                    tabIndex: 0,
+                    "aria-pressed": current === i,
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      e.preventDefault();
+                      setCurrent(current === i ? null : i);
+                    },
+                  })}
                 >
                   {line.map((run, j) => (
                     <RunText key={j} run={run} hanzi={hanzi} />
@@ -223,7 +234,7 @@ export default function ReadAloud() {
               <input
                 type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                hidden
+                className="file-input"
                 disabled={opening}
                 onChange={(e) => {
                   void openFile(e.target.files?.[0]);

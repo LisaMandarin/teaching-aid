@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Chalkboard from "./Chalkboard";
+import { BoardText, useHanzi } from "./CellContent";
 import DropZone from "./DropZone";
 import StorageNotice from "./StorageNotice";
 import { DownloadIcon, FolderIcon, RefreshIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
 import { downloadNamesTemplate, parseNames } from "@/lib/draw";
+import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { playDing, playRattle } from "@/lib/sounds";
+import { visibleLength } from "@/lib/zhuyin";
 import { isStringArray, keepBroken, readSaved, validIndexes, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "draw-list";
@@ -27,6 +30,7 @@ function listFrom(v: unknown): List | null {
     history: validIndexes(l.history, l.names.length),
     absent: validIndexes(l.absent, l.names.length),
     noRepeat: typeof l.noRepeat === "boolean" ? l.noRepeat : true,
+    font: isFontId(l.font ?? null) ? l.font : "plain",
   };
 }
 
@@ -39,6 +43,8 @@ type List = {
   absent: number[];
   // Put each drawn stick aside so nobody is called twice until 重新開始.
   noRepeat: boolean;
+  // How the names are shown on the board.
+  font: FontId;
 };
 
 // One fortune stick: a wooden body with a pointed red tip, standing on its bottom at y = 230,
@@ -48,7 +54,7 @@ function Stick({ x, top, name }: { x: number; top: number; name: string }) {
   const tip = 32;
   const body = 230 - top - tip;
   // Shrink long names so they fit on the body.
-  const size = Math.min(13, (body - 12) / Math.max(name.length, 1));
+  const size = Math.min(13, (body - 12) / Math.max(visibleLength(name), 1));
   return (
     <>
       <rect className="stick-body" x={x - w / 2} y={top + tip - 2} width={w} height={body + 2} rx="2" strokeWidth="1" />
@@ -128,6 +134,7 @@ export default function NameDraw() {
   const drawTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   // Bumped by each file opened, so a slower earlier file can't replace a later one.
   const openRun = useRef(0);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Kept in the browser so a reload in the middle of class doesn't put everyone back in the cup.
   useEffect(() => {
@@ -153,6 +160,12 @@ export default function NameDraw() {
         .map((_, i) => i)
         .filter((i) => !list.absent.includes(i) && !(list.noRepeat && list.history.includes(i)))
     : [];
+  const font = list?.font ?? "plain";
+  const setFont = (f: FontId) => setList((l) => l && { ...l, font: f });
+  const hanzi = useHanzi(font);
+  const family = fontFamilyOf(font);
+  const nameStyle = family ? { fontFamily: `${family}, var(--font-board-text)`, fontWeight: 400 } : undefined;
+
   const current = list && list.history.length > 0 ? list.names[list.history[list.history.length - 1]] : null;
 
   // Stops a draw in progress without picking anyone.
@@ -169,12 +182,20 @@ export default function NameDraw() {
     setError("");
     if (!isExcel(file)) return setError("請選擇 Excel 檔（.xlsx）。");
     try {
-      const { names, warnings } = await parseNames(file);
+      const { names, font, warnings } = await parseNames(file);
       if (run !== openRun.current) return;
       if (names.length === 0) return setError("檔案裡找不到名字。第一列寫「學生」，從第二列開始每列一位學生。");
       // A draw from the old list would land on an index of the new one.
       stopDraw();
-      setList({ fileName: file.name, names, history: [], absent: [], noRepeat: list?.noRepeat ?? true });
+      // A file without a 字型 setting keeps the font in use now.
+      setList({
+        fileName: file.name,
+        names,
+        history: [],
+        absent: [],
+        noRepeat: list?.noRepeat ?? true,
+        font: font ?? list?.font ?? "plain",
+      });
       setWarnings(warnings);
     } catch {
       if (run === openRun.current) setError("這個 Excel 檔讀不出來，請確認檔案沒有損壞。");
@@ -196,7 +217,9 @@ export default function NameDraw() {
       setList((l) => l && { ...l, history: [...l.history, pick] });
       setDrawCount((n) => n + 1);
       // Chime when the stick lands in front of the cup.
-      if (!muted) drawTimers.current.push(setTimeout(playDing, STICK_MS));
+      // Not if the teacher has gone to another page by then (the game stays mounted there).
+      if (!muted)
+        drawTimers.current.push(setTimeout(() => rootRef.current?.checkVisibility() && playDing(), STICK_MS));
     }, SHAKE_MS);
     // clearTimeout also clears an interval.
     drawTimers.current = [flip, land];
@@ -219,7 +242,7 @@ export default function NameDraw() {
       <input
         type="file"
         accept=".xlsx"
-        hidden
+        className="file-input"
         disabled={shaking}
         onChange={(e) => {
           void open(e.target.files?.[0]);
@@ -231,6 +254,7 @@ export default function NameDraw() {
 
   return (
     <div
+      ref={rootRef}
       className={`game draw ${dragging ? "is-dragging" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
@@ -249,6 +273,16 @@ export default function NameDraw() {
         <h1 className="page-title">抽籤筒</h1>
         {list && (
           <div className="page-tools">
+          <label className="tag-field">
+            名字字型
+            <select className="select-tag" value={font} onChange={(e) => isFontId(e.target.value) && setFont(e.target.value)}>
+              {FONTS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
             <button
               className="btn-tag mute-btn"
               onClick={() => setMuted((m) => !m)}
@@ -296,7 +330,7 @@ export default function NameDraw() {
             <input
               type="file"
               accept=".xlsx"
-              hidden
+              className="file-input"
               onChange={(e) => {
                 void open(e.target.files?.[0]);
                 e.target.value = "";
@@ -313,11 +347,15 @@ export default function NameDraw() {
           <Chalkboard className="draw-stage">
             <div className={`draw-result ${shaking ? "is-flicker" : ""}`} aria-live="polite">
               {shaking ? (
-                <span className="draw-flicker">{flicker}</span>
+                <span className="draw-flicker" style={nameStyle}>
+                  <BoardText text={flicker} font={font} hanzi={hanzi} />
+                </span>
               ) : current ? (
                 <span key={drawCount} className="draw-picked">
                   <span className="draw-order">第 {list.history.length} 位</span>
-                  <span className="draw-name">{current}</span>
+                  <span className="draw-name" style={nameStyle}>
+                    <BoardText text={current} font={font} hanzi={hanzi} />
+                  </span>
                   <span className="draw-underline chalk-line" aria-hidden="true" />
                 </span>
               ) : (

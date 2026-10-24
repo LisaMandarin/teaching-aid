@@ -163,6 +163,8 @@ export default function InstantCamera() {
   // Where the photo was when it started growing to full screen.
   const zoomFrom = useRef<Spot | null>(null);
   const ejectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // What had the focus before a photo was shown big (拍照 or a photo on the board); it gets it back after.
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const { value, broken } = readSaved(STORAGE_KEY);
@@ -208,9 +210,17 @@ export default function InstantCamera() {
     });
   }, [phase]);
 
+  useEffect(() => {
+    if (phase !== "idle" || !returnFocus.current) return;
+    if (returnFocus.current.isConnected) returnFocus.current.focus();
+    returnFocus.current = null;
+  }, [phase]);
+
   const take = () => {
     if (busy || left.length === 0) return;
     const pick = order === "random" ? left[Math.floor(Math.random() * left.length)] : left[0];
+    // Saved now: 拍照 is disabled while the photo comes out, which takes the focus off it.
+    if (document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement;
     setTaken((prev) => [...prev, pick.id]);
     setShownId(pick.id);
     setFresh(true);
@@ -226,6 +236,7 @@ export default function InstantCamera() {
   // A photo on the board, shown big again.
   const view = (photo: Photo, el: HTMLElement, angle: number) => {
     if (busy) return;
+    if (document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement;
     zoomFrom.current = spotOf(el, angle);
     setShownId(photo.id);
     setFresh(false);
@@ -324,7 +335,7 @@ export default function InstantCamera() {
         type="file"
         accept="image/*"
         multiple
-        hidden
+        className="file-input"
         disabled={importing}
         onChange={(e) => {
           void importPhotos(filesIn(e.target.files));
@@ -418,7 +429,7 @@ export default function InstantCamera() {
             type="file"
             accept="image/*"
             multiple
-            hidden
+            className="file-input"
             disabled={importing}
             onChange={(e) => {
               void importPhotos(filesIn(e.target.files));
@@ -613,6 +624,8 @@ export default function InstantCamera() {
               e.preventDefault();
               putDown();
             }
+            // The photo is the only thing to act on while it's big: Tab doesn't leave it for the page behind.
+            if (e.key === "Tab") e.preventDefault();
           }}
         >
           <div ref={bigRef} className={`instant-photo instant-big ${fresh ? "is-developing" : ""}`} style={shapeOf(shown)}>

@@ -142,7 +142,8 @@ function BoxArt({ number, cover, font, hanzi }: { number: number; cover?: Cell; 
   );
 }
 
-function GiftFace({ gift }: { gift: Gift }) {
+// The gift inside an opened box. Its name is in the same font as the covers.
+function GiftFace({ gift, font, hanzi }: { gift: Gift; font: FontId; hanzi: Hanzi | null }) {
   const [failed, setFailed] = useState(false);
   let visual: React.ReactNode = null;
   if (gift.image && !failed)
@@ -160,7 +161,11 @@ function GiftFace({ gift }: { gift: Gift }) {
   return (
     <>
       {visual}
-      {gift.text && <span className={`gift-name ${visual ? "" : "is-big"}`}>{gift.text}</span>}
+      {gift.text && (
+        <span className={`gift-name ${visual ? "" : "is-big"}`}>
+          <BoardText text={gift.text} font={font} hanzi={hanzi} />
+        </span>
+      )}
     </>
   );
 }
@@ -187,6 +192,7 @@ export default function GiftBoxes() {
   const [storageFull, setStorageFull] = useState(false);
   const [savedBroken, setSavedBroken] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const { value, broken } = readSaved(STORAGE_KEY);
@@ -220,8 +226,9 @@ export default function GiftBoxes() {
     [SHAKE_SOUND, ...SOUND_FILES].forEach((s) => preloadSoundFile(soundUrl(s)));
   }, []);
 
+  // A sound due after the teacher has gone to another page isn't played (the game stays mounted there).
   const play = (sound: string) => {
-    if (!muted) playSoundFile(soundUrl(sound));
+    if (!muted && rootRef.current?.checkVisibility()) playSoundFile(soundUrl(sound));
   };
   const later = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
 
@@ -342,7 +349,7 @@ export default function GiftBoxes() {
   const hanzi = useHanzi(setup.font);
 
   return (
-    <div className="game gifts">
+    <div ref={rootRef} className="game gifts">
       {lastGift?.kind === "good" && <Confetti key={result!.key} />}
 
       <header className="page-header">
@@ -409,7 +416,7 @@ export default function GiftBoxes() {
               <input
                 type="file"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                hidden
+                className="file-input"
                 disabled={importing || busy}
                 onChange={(e) => {
                   void importExcel(e.target.files?.[0]);
@@ -435,7 +442,7 @@ export default function GiftBoxes() {
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void pickLocalImages([...(e.target.files ?? [])]);
@@ -481,7 +488,14 @@ export default function GiftBoxes() {
               <span className="gifts-placeholder">第 {shaking + 1} 個禮物盒…</span>
             ) : lastGift ? (
               <span key={result!.key} className={`gifts-result-text kind-${lastGift.kind}`}>
-                {kindOf(lastGift).emoji} {lastGift.text || kindOf(lastGift).name}
+                {kindOf(lastGift).emoji}{" "}
+                {lastGift.text ? (
+                  <span style={coverFont ? { fontFamily: `${coverFont}, var(--font-board-text)` } : undefined}>
+                    <BoardText text={lastGift.text} font={setup.font} hanzi={hanzi} />
+                  </span>
+                ) : (
+                  kindOf(lastGift).name
+                )}
               </span>
             ) : (
               <span className="gifts-placeholder">{allOpened ? "禮物都打開了！" : "選一個禮物盒吧！"}</span>
@@ -513,7 +527,7 @@ export default function GiftBoxes() {
                   </button>
                   {opened && (
                     <div key={isNew ? reveal.key : "done"} className={`gift-item kind-${gift.kind} ${isNew ? "is-new" : ""}`}>
-                      <GiftFace gift={gift} />
+                      <GiftFace gift={gift} font={setup.font} hanzi={hanzi} />
                     </div>
                   )}
                   {isNew && gift.kind === "bomb" && <div className="gift-boom" aria-hidden="true" />}

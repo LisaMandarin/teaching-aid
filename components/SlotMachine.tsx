@@ -308,7 +308,7 @@ export default function SlotMachine() {
               <input
                 type="file"
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                hidden
+                className="file-input"
                 disabled={importing || spinning}
                 onChange={(e) => {
                   void importExcel(e.target.files?.[0]);
@@ -334,7 +334,7 @@ export default function SlotMachine() {
                 type="file"
                 accept="image/*"
                 multiple
-                hidden
+                className="file-input"
                 disabled={importing}
                 onChange={(e) => {
                   void pickLocalImages([...(e.target.files ?? [])]);

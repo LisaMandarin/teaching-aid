@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BoardText, useHanzi } from "./CellContent";
 import DropZone from "./DropZone";
 import StorageNotice from "./StorageNotice";
 import { DownloadIcon, FolderIcon, SoundOffIcon, SoundOnIcon } from "./Icons";
+import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { downloadRoster, downloadRosterTemplate, parseRoster, rosterFrom, type Roster } from "@/lib/rewards";
 import { playCoin, preloadCoinSound } from "@/lib/sounds";
 import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
@@ -76,6 +78,11 @@ export default function Rewards() {
     writeSaved(MUTE_KEY, muted ? 1 : 0);
   }, [roster, muted, loaded]);
 
+  const font = roster?.font ?? "plain";
+  const setFont = (f: FontId) => setRoster((r) => r && { ...r, font: f });
+  const hanzi = useHanzi(font);
+  const family = fontFamilyOf(font);
+
   const earnedToday = roster?.students.some((s) => s.coins !== s.start) ?? false;
 
   const open = async (file: File | undefined) => {
@@ -84,7 +91,7 @@ export default function Rewards() {
     if (!isExcel(file)) return setError("請選擇 Excel 檔（.xlsx）。");
     if (earnedToday && !confirm("今天的金幣還沒下載，換成新的檔案會蓋掉。確定要換嗎？")) return;
     try {
-      const { roster: next, warnings } = await parseRoster(file);
+      const { roster: next, warnings } = await parseRoster(file, roster?.font ?? "plain");
       if (next.students.length === 0) return setError("檔案裡找不到學生。第一列寫「學生」「金幣」，從第二列開始每列一位學生。");
       setRoster(next);
       setWarnings(warnings);
@@ -119,7 +126,7 @@ export default function Rewards() {
       <input
         type="file"
         accept=".xlsx"
-        hidden
+        className="file-input"
         onChange={(e) => {
           void open(e.target.files?.[0]);
           e.target.value = "";
@@ -155,6 +162,16 @@ export default function Rewards() {
         </div>
         {roster && (
           <div className="page-tools">
+          <label className="tag-field">
+            名字字型
+            <select className="select-tag" value={font} onChange={(e) => isFontId(e.target.value) && setFont(e.target.value)}>
+              {FONTS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </label>
             <button
               className="btn-tag mute-btn"
               onClick={() => setMuted((m) => !m)}
@@ -211,7 +228,7 @@ export default function Rewards() {
             <input
               type="file"
               accept=".xlsx"
-              hidden
+              className="file-input"
               onChange={(e) => {
                 void open(e.target.files?.[0]);
                 e.target.value = "";
@@ -239,8 +256,13 @@ export default function Rewards() {
                   aria-label={`${s.name}，${s.coins} 枚金幣，點一下加一枚`}
                 >
                   <span className="pin pin--md" aria-hidden="true" />
-                  <span className="rewards-name" title={s.name}>
-                    {s.name}
+                  <span
+                    className="rewards-name"
+                    title={s.name}
+                    data-font={font}
+                    style={family ? { fontFamily: `${family}, var(--font-board-text)`, fontWeight: 400 } : undefined}
+                  >
+                    <BoardText text={s.name} font={font} hanzi={hanzi} />
                   </span>
                   <span className="chest">
                     {falling
