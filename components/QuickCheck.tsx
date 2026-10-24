@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Chalkboard from "./Chalkboard";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import StorageNotice from "./StorageNotice";
@@ -55,6 +55,8 @@ export default function QuickCheck() {
   const [savedBroken, setSavedBroken] = useState(false);
   const [importing, setImporting] = useState(false);
   const [pendingImport, setPendingImport] = useState<ParsedWorkbook | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [editing, setEditing] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -120,10 +122,13 @@ export default function QuickCheck() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseWorkbook(file);
+      if (run !== importRun.current) return;
       if (parsed.lessons.length === 0) {
         setNotice({ lines: [], warnings: ["這個檔案裡找不到素材。請用範本格式，第一列填「文字」「圖片」。"] });
       } else if (parsed.localNames.length > 0) {
@@ -132,18 +137,33 @@ export default function QuickCheck() {
         applyImport(parsed, []);
       }
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
     const missing = await attachLocalImages(pendingImport.lessons, files);
+    if (run !== importRun.current) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedWorkbook) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
   };
 
   const addBlank = () => {
@@ -224,8 +244,8 @@ export default function QuickCheck() {
                 e.target.value = "";
               }} />
             </label>
-            <button className="btn" onClick={() => applyImport(pendingImport, pendingImport.localNames)}>略過圖片</button>
-            <button className="btn" onClick={() => setPendingImport(null)}>取消匯入</button>
+            <button className="btn" onClick={() => skipImages(pendingImport)}>略過圖片</button>
+            <button className="btn" onClick={cancelImport}>取消匯入</button>
           </div>
         </div>
       )}

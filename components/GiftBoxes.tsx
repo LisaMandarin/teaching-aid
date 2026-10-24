@@ -179,6 +179,8 @@ export default function GiftBoxes() {
   // The whole stage shakes for a moment when a bomb goes off.
   const [boom, setBoom] = useState(false);
   const [pendingImport, setPendingImport] = useState<ParsedGifts | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
@@ -289,31 +291,49 @@ export default function GiftBoxes() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseGifts(file);
+      if (run !== importRun.current) return;
       if (parsed.setup.gifts.length === 0)
         setNotice({ lines: [], warnings: ["這個檔案裡找不到禮物。請用範本的格式：「禮物」工作表第一列是「名稱」「圖片」「種類」「數量」「音效」。"] });
       else if (parsed.localNames.length > 0) setPendingImport(parsed);
       else applyImport(parsed, []);
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
     const lessons: ParsedWorkbook["lessons"] = [
       { name: "", items: pendingImport.setup.gifts },
       { name: "", items: pendingImport.setup.covers },
     ];
     const missing = await attachLocalImages(lessons, files);
+    if (run !== importRun.current) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedGifts) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
   };
 
   const lastGift = result && round ? round.gifts[result.index] : null;
@@ -422,10 +442,10 @@ export default function GiftBoxes() {
                 }}
               />
             </label>
-            <button className="btn" onClick={() => applyImport(pendingImport, pendingImport.localNames)}>
+            <button className="btn" onClick={() => skipImages(pendingImport)}>
               略過圖片
             </button>
-            <button className="btn" onClick={() => setPendingImport(null)}>
+            <button className="btn" onClick={cancelImport}>
               取消匯入
             </button>
           </div>

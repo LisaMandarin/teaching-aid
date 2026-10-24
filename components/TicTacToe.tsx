@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import Chalkboard from "./Chalkboard";
 import Confetti from "./Confetti";
@@ -88,6 +88,8 @@ export default function TicTacToe() {
   const [lessonIndex, setLessonIndex] = useState<number | null>(null);
   // An imported workbook still waiting for the teacher to pick its local image files.
   const [pendingImport, setPendingImport] = useState<ParsedWorkbook | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [storageFull, setStorageFull] = useState(false);
@@ -220,27 +222,45 @@ export default function TicTacToe() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseWorkbook(file);
+      if (run !== importRun.current) return;
       if (parsed.lessons.length === 0)
         setNotice({ lines: [], warnings: ["這個檔案裡找不到題目。請用範本的格式：每個工作表一課，第一列是「文字」「圖片」。"] });
       else if (parsed.localNames.length > 0) setPendingImport(parsed);
       else applyImport(parsed, []);
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
     const missing = await attachLocalImages(pendingImport.lessons, files);
+    if (run !== importRun.current) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedWorkbook) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
   };
 
 
@@ -365,11 +385,11 @@ export default function TicTacToe() {
             </label>
             <button
               className="btn"
-              onClick={() => applyImport(pendingImport, pendingImport.localNames)}
+              onClick={() => skipImages(pendingImport)}
             >
               略過圖片
             </button>
-            <button className="btn" onClick={() => setPendingImport(null)}>
+            <button className="btn" onClick={cancelImport}>
               取消匯入
             </button>
           </div>

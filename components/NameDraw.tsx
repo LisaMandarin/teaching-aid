@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Chalkboard from "./Chalkboard";
 import DropZone from "./DropZone";
 import StorageNotice from "./StorageNotice";
@@ -124,6 +124,10 @@ export default function NameDraw() {
   const [drawCount, setDrawCount] = useState(0);
   const [storageFull, setStorageFull] = useState(false);
   const [savedBroken, setSavedBroken] = useState(false);
+  // The running draw's flicker and timeouts, cleared when a new list replaces the one being drawn from.
+  const drawTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Bumped by each file opened, so a slower earlier file can't replace a later one.
+  const openRun = useRef(0);
 
   // Kept in the browser so a reload in the middle of class doesn't put everyone back in the cup.
   useEffect(() => {
@@ -134,6 +138,8 @@ export default function NameDraw() {
     setSavedBroken(saved.broken || (saved.value !== null && !savedList));
     setMuted(readSaved(MUTE_KEY).value === 1);
     setLoaded(true);
+    // Read at unmount: each draw puts its own timers in the ref.
+    return () => drawTimers.current.forEach(clearTimeout);
   }, []);
 
   useEffect(() => {
@@ -149,17 +155,29 @@ export default function NameDraw() {
     : [];
   const current = list && list.history.length > 0 ? list.names[list.history[list.history.length - 1]] : null;
 
+  // Stops a draw in progress without picking anyone.
+  const stopDraw = () => {
+    drawTimers.current.forEach(clearTimeout);
+    drawTimers.current = [];
+    setShaking(false);
+    setFlicker("");
+  };
+
   const open = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++openRun.current;
     setError("");
     if (!isExcel(file)) return setError("請選擇 Excel 檔（.xlsx）。");
     try {
       const { names, warnings } = await parseNames(file);
+      if (run !== openRun.current) return;
       if (names.length === 0) return setError("檔案裡找不到名字。第一列寫「學生」，從第二列開始每列一位學生。");
+      // A draw from the old list would land on an index of the new one.
+      stopDraw();
       setList({ fileName: file.name, names, history: [], absent: [], noRepeat: list?.noRepeat ?? true });
       setWarnings(warnings);
     } catch {
-      setError("這個 Excel 檔讀不出來，請確認檔案沒有損壞。");
+      if (run === openRun.current) setError("這個 Excel 檔讀不出來，請確認檔案沒有損壞。");
     }
   };
 
@@ -171,15 +189,17 @@ export default function NameDraw() {
 
     const names = pool.map((i) => list.names[i]);
     const flip = setInterval(() => setFlicker(names[Math.floor(Math.random() * names.length)]), 80);
-    setTimeout(() => {
+    const land = setTimeout(() => {
       clearInterval(flip);
       setShaking(false);
       setFlicker("");
       setList((l) => l && { ...l, history: [...l.history, pick] });
       setDrawCount((n) => n + 1);
       // Chime when the stick lands in front of the cup.
-      if (!muted) setTimeout(playDing, STICK_MS);
+      if (!muted) drawTimers.current.push(setTimeout(playDing, STICK_MS));
     }, SHAKE_MS);
+    // clearTimeout also clears an interval.
+    drawTimers.current = [flip, land];
   };
 
   const toggleAbsent = (i: number) =>

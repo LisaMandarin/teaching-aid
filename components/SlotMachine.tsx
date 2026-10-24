@@ -108,6 +108,8 @@ export default function SlotMachine() {
   const [muted, setMuted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ParsedSlots | null>(null);
+  // Bumped by each import and by 取消匯入, so an import that finishes after it was cancelled or replaced is dropped.
+  const importRun = useRef(0);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState<{ lines: string[]; warnings: string[] } | null>(null);
   const [storageFull, setStorageFull] = useState(false);
@@ -214,27 +216,45 @@ export default function SlotMachine() {
 
   const importExcel = async (file: File | undefined) => {
     if (!file) return;
+    const run = ++importRun.current;
     setImporting(true);
     setNotice(null);
+    setPendingImport(null);
     try {
       const parsed = await parseSlots(file);
+      if (run !== importRun.current) return;
       if (parsed.error) setNotice({ lines: [], warnings: [parsed.error, ...parsed.warnings] });
       else if (parsed.localNames.length > 0) setPendingImport(parsed);
       else applyImport(parsed, []);
     } catch {
-      setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
+      if (run === importRun.current) setNotice({ lines: [], warnings: ["無法讀取這個檔案，請確認是 Excel（.xlsx）檔。"] });
     } finally {
-      setImporting(false);
+      if (run === importRun.current) setImporting(false);
     }
   };
 
   const pickLocalImages = async (files: File[]) => {
     if (!pendingImport || files.length === 0) return;
+    const run = ++importRun.current;
     setImporting(true);
     const lessons: ParsedWorkbook["lessons"] = pendingImport.setup.reels.map((r) => ({ name: r.title, items: r.cells }));
     const missing = await attachLocalImages(lessons, files);
+    if (run !== importRun.current) return;
     setImporting(false);
     applyImport(pendingImport, missing);
+  };
+
+  const cancelImport = () => {
+    importRun.current++;
+    setImporting(false);
+    setPendingImport(null);
+  };
+
+  const skipImages = (parsed: ParsedSlots) => {
+    // Pictures still loading from an earlier pick are no longer wanted.
+    importRun.current++;
+    setImporting(false);
+    applyImport(parsed, parsed.localNames);
   };
 
   const cellFont = fontFamilyOf(setup.font);
@@ -322,10 +342,10 @@ export default function SlotMachine() {
                 }}
               />
             </label>
-            <button className="btn" onClick={() => applyImport(pendingImport, pendingImport.localNames)}>
+            <button className="btn" onClick={() => skipImages(pendingImport)}>
               略過圖片
             </button>
-            <button className="btn" onClick={() => setPendingImport(null)}>
+            <button className="btn" onClick={cancelImport}>
               取消匯入
             </button>
           </div>
