@@ -148,8 +148,8 @@ export default function QuickCheck() {
     if (!pendingImport || files.length === 0) return;
     const run = ++importRun.current;
     setImporting(true);
-    const missing = await attachLocalImages(pendingImport.lessons, files);
-    if (run !== importRun.current) return;
+    const missing = await attachLocalImages(pendingImport.lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
   };

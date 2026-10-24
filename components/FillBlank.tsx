@@ -108,6 +108,7 @@ export default function FillBlank() {
     setOrder(shuffle(blanks.map((b) => b.id)));
     setPlaced({});
     setWrong(null);
+    setChosen(null);
     setCelebration(null);
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,8 +156,8 @@ export default function FillBlank() {
     const text = plainText(before);
     if (!/[[(（【]/.test(text)) return;
     const done = await withReadings(before);
-    // Typed on while the readings were loading: it's done the next time the editor is left.
-    if (plainText(readEditor(root, baseFont).runs) !== text) return;
+    // Typed on, or a font or blank changed, while the readings were loading: it's done the next time the editor is left.
+    if (JSON.stringify(readEditor(root, baseFont).runs) !== JSON.stringify(before)) return;
     if (plainText(done.runs) !== text) redraw(done.runs);
     if (done.notice) setNotice(done.notice);
   };
@@ -248,10 +249,12 @@ export default function FillBlank() {
     const box = e.currentTarget.getBoundingClientRect();
     setDrag({ card, pointer: e.pointerId, x: e.clientX, y: e.clientY, dx: e.clientX - box.left, dy: e.clientY - box.top });
     setWrong(null);
+    // Dragging a card replaces picking one with the keyboard.
+    setChosen(null);
   };
 
   const drop = (card: number, slot: number | null) => {
-    if (slot === null || placed[slot] !== undefined) return;
+    if (slot === null || placed[slot] !== undefined || Object.values(placed).includes(card)) return;
     if (byId.get(card)?.answer === byId.get(slot)?.answer) {
       const next = { ...placed, [slot]: card };
       setPlaced(next);

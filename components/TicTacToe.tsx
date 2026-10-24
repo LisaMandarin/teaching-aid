@@ -101,7 +101,7 @@ export default function TicTacToe() {
   useEffect(() => {
     const { value, broken } = readSaved(STORAGE_KEY);
     const saved = value as { cells?: unknown[]; names?: unknown; lessons?: unknown[]; lessonIndex?: unknown } | null;
-    const cellsOk = saved?.cells?.length === 9 && saved.cells.every(isCell);
+    const cellsOk = Array.isArray(saved?.cells) && saved.cells.length === 9 && saved.cells.every(isCell);
     if (cellsOk) setCells(saved!.cells as Cell[]);
     if (isStringArray(saved?.names) && saved.names.length === 2) setNames(saved.names as [string, string]);
     const savedLessons = Array.isArray(saved?.lessons) ? saved.lessons.filter(isLesson) : [];
@@ -253,8 +253,8 @@ export default function TicTacToe() {
     if (!pendingImport || files.length === 0) return;
     const run = ++importRun.current;
     setImporting(true);
-    const missing = await attachLocalImages(pendingImport.lessons, files);
-    if (run !== importRun.current) return;
+    const missing = await attachLocalImages(pendingImport.lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
   };
@@ -484,9 +484,19 @@ export default function TicTacToe() {
                   aria-label={`${cell.text || `第 ${i + 1} 格`}${marks[i] !== null ? `（${SYMBOLS[marks[i]]}）` : ""}`}
                 >
                   <span className="ttt-content">
-                    {cell.image && <CellImage key={cell.image} cell={cell} />}
+                    {cell.image ? (
+                      <CellImage key={cell.image} cell={cell} />
+                    ) : (
+                      // A picture from the computer that was skipped at import.
+                      cell.imageName && (
+                        <span className="ttt-img-missing">
+                          ⚠️ 找不到圖片
+                          <small>{cell.imageName}</small>
+                        </span>
+                      )
+                    )}
                     {cell.text && (
-                      <span className={`ttt-text ${textSize(cell.text, !!cell.image)}`}>
+                      <span className={`ttt-text ${textSize(cell.text, !!(cell.image || cell.imageName))}`}>
                         <BoardText text={cell.text} font={font} hanzi={hanzi} />
                       </span>
                     )}

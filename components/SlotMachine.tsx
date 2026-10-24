@@ -128,7 +128,8 @@ export default function SlotMachine() {
           font: isFontId(saved!.setup!.font ?? null) ? saved!.setup!.font! : DEFAULT_SETUP.font,
         }
       : DEFAULT_SETUP;
-    const fits = (list: unknown[] | undefined, ok: (x: unknown) => boolean) => list?.length === s.reels.length && list.every(ok);
+    const fits = (list: unknown, ok: (x: unknown) => boolean) =>
+      Array.isArray(list) && list.length === s.reels.length && list.every(ok);
     setSetup(s);
     setStops(
       fits(saved?.stops, Number.isInteger)
@@ -238,8 +239,8 @@ export default function SlotMachine() {
     const run = ++importRun.current;
     setImporting(true);
     const lessons: ParsedWorkbook["lessons"] = pendingImport.setup.reels.map((r) => ({ name: r.title, items: r.cells }));
-    const missing = await attachLocalImages(lessons, files);
-    if (run !== importRun.current) return;
+    const missing = await attachLocalImages(lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
   };

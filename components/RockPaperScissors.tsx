@@ -63,8 +63,9 @@ export default function RockPaperScissors() {
     const { value, broken } = readSaved(STORAGE_KEY);
     const saved = value as { names?: unknown; scores?: unknown[]; font?: string } | null;
     if (isStringArray(saved?.names) && saved.names.length === 2) setNames(saved.names as [string, string]);
-    if (saved?.scores?.length === 2 && saved.scores.every((n) => Number.isInteger(n) && (n as number) >= 0))
-      setScores(saved.scores as [number, number]);
+    const scores = saved?.scores;
+    if (Array.isArray(scores) && scores.length === 2 && scores.every((n) => Number.isInteger(n) && (n as number) >= 0))
+      setScores(scores as [number, number]);
     if (isFontId(saved?.font ?? null)) setFont(saved!.font as FontId);
     setSavedBroken(broken);
     setMuted(readSaved(MUTE_KEY).value === 1);

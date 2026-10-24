@@ -83,13 +83,14 @@ const NOT_DATA = /說明|設定|選項/;
 const HEADER_MAX = 8;
 
 // The rows of the sheet holding a class list (抽籤筒, 我的獎勵): the first one whose header row has a
-// `header` label, else the first with something in it. Help and settings sheets are skipped unless
-// there's nothing else; blank rows are dropped.
+// `header` label, else the first with something in it. Help and settings sheets are skipped (an emptied
+// template has none left, and its help text isn't a class list); blank rows are dropped.
 export function rosterRows(sheets: ReadSheet[], header: RegExp): unknown[][] {
-  const filled = (list: ReadSheet[]) =>
-    list.map((s) => s.data.filter((row) => row.some((v) => cellText(v) !== ""))).filter((rows) => rows.length > 0);
-  const data = filled(sheets.filter((s) => !NOT_DATA.test(s.sheet)));
-  if (data.length === 0) return filled(sheets)[0] ?? [];
+  const data = sheets
+    .filter((s) => !NOT_DATA.test(s.sheet))
+    .map((s) => s.data.filter((row) => row.some((v) => cellText(v) !== "")))
+    .filter((rows) => rows.length > 0);
+  if (data.length === 0) return [];
   const isHeader = (v: unknown) => cellText(v).length <= HEADER_MAX && header.test(cellText(v));
   return data.find((rows) => rows[0].some(isHeader)) ?? data[0];
 }

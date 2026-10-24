@@ -18,16 +18,23 @@ export function readSaved(key: string): { value: unknown; broken: boolean } {
   }
 }
 
+// Keys whose unusable value couldn't be copied aside (the browser is full). Overwriting them would lose the
+// only copy, so they aren't saved again during this visit: saving reports failure, which shows 儲存空間不夠.
+const held = new Set<string>();
+
 // Copies what's saved under `key` to `<key>:broken`, for a saved value the game couldn't use.
 export function keepBroken(key: string) {
   try {
     const raw = localStorage.getItem(key);
     if (raw !== null) localStorage.setItem(`${key}:broken`, raw);
-  } catch {}
+  } catch {
+    held.add(key);
+  }
 }
 
 // Saves `value` (null removes it). False when the browser refused, usually because it's full.
 export function writeSaved(key: string, value: unknown): boolean {
+  if (held.has(key)) return false;
   try {
     if (value === null) localStorage.removeItem(key);
     else localStorage.setItem(key, JSON.stringify(value));
@@ -39,6 +46,9 @@ export function writeSaved(key: string, value: unknown): boolean {
 
 export const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === "string");
 
-// The indexes in `v` that point into a list of `length`, without repeats; anything else is dropped.
-export const validIndexes = (v: unknown, length: number): number[] =>
-  Array.isArray(v) ? [...new Set(v.filter((i) => Number.isInteger(i) && i >= 0 && i < length))] : [];
+// The indexes in `v` that point into a list of `length`, in order; anything else is dropped.
+// `unique` drops repeats too (a set, like who's absent); a history keeps them.
+export function validIndexes(v: unknown, length: number, unique: boolean): number[] {
+  const valid = Array.isArray(v) ? v.filter((i) => Number.isInteger(i) && i >= 0 && i < length) : [];
+  return unique ? [...new Set(valid)] : valid;
+}

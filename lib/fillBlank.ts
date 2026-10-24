@@ -3,8 +3,10 @@
 
 import type { FontId } from "./fonts";
 import { type Run, changeRange, mergeRuns, plainText, snapRange } from "./readAloud";
-import { visibleLength } from "./zhuyin";
+import { FIRST_READING, visibleLength } from "./zhuyin";
 
+// `answer` is what a card has to match: the text, where 重[ㄓㄨㄥˋ] (first reading picked) and plain 重
+// are the same word, shown the same way.
 export type Blank = { id: number; runs: Run[]; answer: string };
 
 // The blanks in the order they are in the text.
@@ -14,7 +16,7 @@ export function blanksOf(runs: Run[]): Blank[] {
     if (r.blank === undefined) continue;
     const b = byId.get(r.blank) ?? { id: r.blank, runs: [], answer: "" };
     b.runs.push(r);
-    b.answer += r.text;
+    b.answer += r.text.replaceAll(FIRST_READING, "");
     byId.set(r.blank, b);
   }
   return [...byId.values()];

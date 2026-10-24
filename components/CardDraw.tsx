@@ -298,8 +298,8 @@ export default function CardDraw() {
     const lessons: ParsedWorkbook["lessons"] = pendingImport.setup.decks.flatMap((d, i) =>
       d ? [{ name: DECK_NAMES[i], items: d }] : [],
     );
-    const missing = await attachLocalImages(lessons, files);
-    if (run !== importRun.current) return;
+    const missing = await attachLocalImages(lessons, files, () => run === importRun.current);
+    if (missing === null) return;
     setImporting(false);
     applyImport(pendingImport, missing);
   };

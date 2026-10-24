@@ -27,8 +27,9 @@ function listFrom(v: unknown): List | null {
   return {
     fileName: typeof l.fileName === "string" ? l.fileName : "",
     names: l.names,
-    history: validIndexes(l.history, l.names.length),
-    absent: validIndexes(l.absent, l.names.length),
+    // Drawn again when 抽過的不再抽 is off, so a name can be in the history more than once.
+    history: validIndexes(l.history, l.names.length, false),
+    absent: validIndexes(l.absent, l.names.length, true),
     noRepeat: typeof l.noRepeat === "boolean" ? l.noRepeat : true,
     font: isFontId(l.font ?? null) ? l.font : "plain",
   };

@@ -212,9 +212,13 @@ export default function InstantCamera() {
 
   useEffect(() => {
     if (phase !== "idle" || !returnFocus.current) return;
-    if (returnFocus.current.isConnected) returnFocus.current.focus();
+    // After the last photo, 拍一張 is gone and the shutter is disabled: the photo just put on the board takes the focus instead.
+    const back = returnFocus.current;
+    const usable = back.isConnected && !back.matches(":disabled");
+    const to = usable ? back : onBoardRefs.current.get(taken.at(-1) ?? "");
+    to?.focus();
     returnFocus.current = null;
-  }, [phase]);
+  }, [phase, taken]);
 
   const take = () => {
     if (busy || left.length === 0) return;
