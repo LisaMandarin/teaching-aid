@@ -97,7 +97,9 @@ export default function ReadAloud() {
     const text = plainText(before);
     if (!/[[(（【]/.test(text)) return;
     const done = await withReadings(before);
-    // Typed on, or a font or blank changed, while the readings were loading: it's done the next time the editor is left.
+    // Back in the editor (redrawing would move the cursor), or typed on, or a font or blank changed, while the
+    // readings were loading: it's done the next time the editor is left.
+    if (root.contains(document.activeElement)) return;
     if (JSON.stringify(readEditor(root, baseFont).runs) !== JSON.stringify(before)) return;
     if (plainText(done.runs) !== text) redraw(done.runs);
     if (done.notice) setNotice(done.notice);
