@@ -27,6 +27,7 @@ import {
 } from "@/lib/gifts";
 import { shuffle } from "@/lib/lessons";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
+import { READING_MARKS } from "@/lib/zhuyin";
 import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
 
 const STORAGE_KEY = "gifts-setup";
@@ -82,7 +83,7 @@ function textWidth(text: string, font: FontId, hanzi: Hanzi | null): number {
   if (font === "pinyin-only" && hanzi) text = pinyinLine(hanzi.convert(text));
   const han = font === "plain" || font === "hans" ? 1 : font === "zhuyin-only" ? 0.9 : font === "hans-pinyin" ? 1.5 : 1.3;
   let width = 0;
-  for (const ch of text.replace(/[\u{E0100}-\u{E01EF}\uFE00-\uFE0F]/gu, "").trim())
+  for (const ch of text.replace(READING_MARKS, "").trim())
     width += /[\p{Script=Han}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u.test(ch) ? han : ch === " " ? 0.3 : 0.6;
   return Math.max(width, 1);
 }

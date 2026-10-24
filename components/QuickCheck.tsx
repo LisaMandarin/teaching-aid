@@ -7,6 +7,7 @@ import StorageNotice from "./StorageNotice";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
 import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
+import { typedReadings } from "@/lib/zhuyin";
 import {
   attachLocalImages,
   downloadQuickCheckTemplate,
@@ -180,6 +181,18 @@ export default function QuickCheck() {
     if ("correct" in patch) setMarks(({ [id]: _stale, ...rest }) => rest);
   };
 
+  // 長[ㄓㄤˇ] typed into a card becomes 長 with its reading picked, once the teacher leaves the field.
+  const finishText = async (id: string, text: string) => {
+    const done = await typedReadings(text);
+    if (!done) return;
+    // Left alone if it was changed again while the readings were loading.
+    const update = (list: QuickItem[]) =>
+      list.map((item) => (item.id === id && item.text === text ? { ...item, text: done.text } : item));
+    setItems(update);
+    setDeck(update);
+    if (done.notice) setNotice({ lines: [], warnings: [done.notice] });
+  };
+
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
     setDeck((prev) => prev.filter((item) => item.id !== id));
@@ -344,6 +357,7 @@ export default function QuickCheck() {
                 <input
                   value={item.text}
                   onChange={(e) => updateItem(item.id, { text: e.target.value })}
+                  onBlur={(e) => void finishText(item.id, e.target.value)}
                   placeholder="文字"
                   aria-label={`第 ${index + 1} 個素材文字`}
                 />

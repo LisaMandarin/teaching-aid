@@ -2,15 +2,12 @@
 // when it's shown, so one question bank works for every font.
 // A 破音字 reading picked in Excel (長[ㄓㄤˇ], see lib/zhuyin.ts) also sets its 拼音.
 
-import { type PolyphoneTable, loadPolyphones } from "./zhuyin";
+import { FIRST_READING, type PolyphoneTable, VS_BASE, isReadingMark, loadPolyphones } from "./zhuyin";
 
 // One character of the board text: a Han character carries its 拼音.
 export type Piece = { text: string; pinyin?: string };
 
 export type Hanzi = { convert: (text: string) => Piece[] };
-
-const VS_BASE = 0xe01e0;
-const isSelector = (ch: string) => /[\u{E0100}-\u{E01EF}︀-️]/u.test(ch);
 
 // ---------- 注音 → 拼音 ----------
 
@@ -107,10 +104,10 @@ function convert(text: string, toHans: (s: string) => string, pinyin: PinyinPro,
   // Split off the reading selectors: [character, reading picked in Excel].
   const chars: { ch: string; reading?: string }[] = [];
   for (const ch of text) {
-    if (isSelector(ch)) {
+    if (isReadingMark(ch)) {
       const last = chars.at(-1);
-      const index = ch.codePointAt(0)! - VS_BASE;
-      const zhuyin = last && index > 0 ? polyphones[last.ch]?.split(" ")[index] : undefined;
+      const index = ch === FIRST_READING ? 0 : ch.codePointAt(0)! - VS_BASE;
+      const zhuyin = last ? polyphones[last.ch]?.split(" ")[index] : undefined;
       if (last && zhuyin) last.reading = zhuyinToPinyin(zhuyin);
     } else chars.push({ ch });
   }

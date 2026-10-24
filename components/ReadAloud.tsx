@@ -89,6 +89,20 @@ export default function ReadAloud() {
     if (editor.current) drawEditor(editor.current, next);
   };
 
+  // 長[ㄓㄤˇ] typed into the editor picks its reading once the teacher leaves it (pasted text already has).
+  const finishTyping = async () => {
+    const root = editor.current;
+    if (!root) return;
+    const before = readEditor(root, baseFont).runs;
+    const text = plainText(before);
+    if (!/[[(（【]/.test(text)) return;
+    const done = await withReadings(before);
+    // Typed on while the readings were loading: it's done the next time the editor is left.
+    if (plainText(readEditor(root, baseFont).runs) !== text) return;
+    if (plainText(done.runs) !== text) redraw(done.runs);
+    if (done.notice) setNotice(done.notice);
+  };
+
   // The selected words get the font; with nothing selected, the whole text does.
   const applyFont = (font: FontId) => {
     const root = editor.current;
@@ -249,6 +263,7 @@ export default function ReadAloud() {
             style={{ fontFamily: editorFamily(baseFont) }}
             spellCheck={false}
             onInput={readBack}
+            onBlur={() => void finishTyping()}
             onPaste={(e) => void paste(e)}
           />
 

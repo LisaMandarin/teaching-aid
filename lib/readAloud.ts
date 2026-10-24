@@ -3,12 +3,10 @@
 // `blank` number are one blank, whose words become a word card.
 
 import { type FontId, isFontId } from "./fonts";
-import { type ReadingProblem, applyReadings, loadPolyphones } from "./zhuyin";
+import { type ReadingProblem, applyReadings, isReadingMark, loadPolyphones, problemsNotice } from "./zhuyin";
 
 export type Run = { text: string; font: FontId; blank?: number };
 
-// Reading selectors (破音字, see lib/zhuyin.ts) belong to the character before them.
-const isSelector = (ch: string) => /[\u{E0100}-\u{E01EF}︀-️]/u.test(ch);
 
 // Joins neighbouring runs in the same font (and blank) and drops empty ones.
 export function mergeRuns(runs: Run[]): Run[] {
@@ -24,10 +22,15 @@ export function mergeRuns(runs: Run[]): Run[] {
 
 export const plainText = (runs: Run[]) => runs.map((r) => r.text).join("");
 
-// Moves start and end so a character isn't split from its reading selector (or its other half).
+// Whether offset i is inside a character (between its two halves) or at the reading mark after it,
+// so a range can't start or end there. Most reading selectors are themselves two halves (U+E01E1…).
+const continuesCharacter = (text: string, i: number) =>
+  /[\uDC00-\uDFFF]/.test(text[i] ?? "") || isReadingMark(String.fromCodePoint(text.codePointAt(i) ?? 0));
+
+// Moves start and end so a character isn't split from its reading mark (or its other half).
 export function snapRange(text: string, start: number, end: number): [number, number] {
-  while (start < end && isSelector(text[start] ?? "")) start++;
-  while (end < text.length && (isSelector(text[end]) || /[\uDC00-\uDFFF]/.test(text[end]))) end++;
+  while (start < end && continuesCharacter(text, start)) start++;
+  while (end < text.length && continuesCharacter(text, end)) end++;
   return [start, end];
 }
 
@@ -174,9 +177,5 @@ export async function withReadings(from: Run[]): Promise<{ runs: Run[]; notice: 
     problems.push(...done.problems);
     return { ...r, text: done.text };
   });
-  const notice =
-    problems.length > 0
-      ? `這些讀音找不到：${problems.map((p) => `${p.char}[${p.reading}]（可用：${p.options.join("、")}）`).join("；")}`
-      : null;
-  return { runs, notice };
+  return { runs, notice: problemsNotice(problems) };
 }

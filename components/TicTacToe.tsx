@@ -7,6 +7,7 @@ import Confetti from "./Confetti";
 import StorageNotice from "./StorageNotice";
 import { playCheer, playWriting, preloadMarkSounds, setMuted } from "@/lib/sounds";
 import { isStringArray, keepBroken, readSaved, writeSaved } from "@/lib/storage";
+import { typedReadings } from "@/lib/zhuyin";
 import {
   type Cell,
   type Lesson,
@@ -177,6 +178,15 @@ export default function TicTacToe() {
 
   const updateCell = (i: number, patch: Partial<Cell>) =>
     setCells((prev) => prev.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+
+  // 長[ㄓㄤˇ] typed into a cell becomes 長 with its reading picked, once the teacher leaves the field.
+  const finishText = async (i: number, text: string) => {
+    const done = await typedReadings(text);
+    if (!done) return;
+    // Left alone if it was changed again while the readings were loading.
+    setCells((prev) => prev.map((c, j) => (j === i && c.text === text ? { ...c, text: done.text } : c)));
+    if (done.notice) setNotice({ lines: [], warnings: [done.notice] });
+  };
 
   const setImage = async (i: number, file: File | undefined) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -442,6 +452,7 @@ export default function TicTacToe() {
                     className={`ttt-input ${textSize(cell.text, !!cell.image)}`}
                     value={cell.text}
                     onChange={(e) => updateCell(i, { text: e.target.value })}
+                    onBlur={(e) => void finishText(i, e.target.value)}
                     onPaste={(e) => {
                       const file = [...e.clipboardData.files].find((f) => f.type.startsWith("image/"));
                       if (file) {
