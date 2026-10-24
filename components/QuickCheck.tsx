@@ -26,7 +26,7 @@ type Mark = "right" | "wrong";
 
 const STORAGE_KEY = "quick-check";
 const MUTE_KEY = "quick-check-muted";
-const RIGHT_SOUND = "/sounds/wow.mp3";
+const RIGHT_SOUND = "/sounds/correct_answer.mp3";
 const WRONG_SOUND = "/sounds/oh%20oh.mp3";
 const starterItems = (): QuickItem[] => [
   { id: "starter-1", text: "早餐", image: null, correct: true },
