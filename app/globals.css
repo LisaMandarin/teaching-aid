@@ -909,11 +909,13 @@ label.btn {
   color: var(--muted);
 }
 
-.ttt-cell .ttt-img-missing {
+.ttt-cell .ttt-img-missing,
+.quick-card .ttt-img-missing {
   color: var(--chalk-orange);
 }
 
-.ttt-cell .ttt-img-missing small {
+.ttt-cell .ttt-img-missing small,
+.quick-card .ttt-img-missing small {
   color: var(--chalk-dim);
 }
 

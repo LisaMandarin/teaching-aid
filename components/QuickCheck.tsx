@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Chalkboard from "./Chalkboard";
-import { BoardText, textSize, useHanzi } from "./CellContent";
+import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
 import { FONTS, type FontId, fontFamilyOf, isFontId } from "@/lib/fonts";
 import { playSoundFile, preloadSoundFile } from "@/lib/sounds";
 import {
@@ -34,6 +34,8 @@ const starterItems = (): QuickItem[] => [
   { id: "starter-3", text: "晚餐", image: null, correct: false },
   { id: "starter-4", text: "點心", image: null, correct: false },
 ];
+// Not crypto.randomUUID(): it's missing on plain-http LAN addresses, which classrooms often use.
+const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 export default function QuickCheck() {
   const [items, setItems] = useState<QuickItem[]>(starterItems);
@@ -51,7 +53,8 @@ export default function QuickCheck() {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (Array.isArray(saved?.items) && saved.items.length > 0)
+      // An empty saved deck is the teacher's choice; only a first visit gets the starter cards.
+      if (Array.isArray(saved?.items))
         setItems(saved.items.map((item: QuickItem) => ({ ...item, correct: item.correct ?? true })));
       if (Array.isArray(saved?.deck))
         setDeck(saved.deck.map((item: QuickItem) => ({ ...item, correct: item.correct ?? true })));
@@ -89,7 +92,7 @@ export default function QuickCheck() {
 
   const applyImport = (parsed: ParsedWorkbook, missingImages: string[]) => {
     const imported = parsed.lessons.flatMap((lesson) =>
-      lesson.items.map((item) => ({ ...item, id: crypto.randomUUID(), correct: item.correct ?? true })),
+      lesson.items.map((item) => ({ ...item, id: newId(), correct: item.correct ?? true })),
     );
     setItems(imported);
     setDeck(shuffle(imported));
@@ -130,7 +133,7 @@ export default function QuickCheck() {
   };
 
   const addBlank = () => {
-    const next = [...items, { id: crypto.randomUUID(), text: "", image: null, correct: true }];
+    const next = [...items, { id: newId(), text: "", image: null, correct: true }];
     setItems(next);
     setDeck(next);
   };
@@ -139,6 +142,8 @@ export default function QuickCheck() {
     const update = (list: QuickItem[]) => list.map((item) => (item.id === id ? { ...item, ...patch } : item));
     setItems(update);
     setDeck(update);
+    // A changed answer makes the shown ✓/× wrong, so the card goes back to unrevealed.
+    if ("correct" in patch) setMarks(({ [id]: _stale, ...rest }) => rest);
   };
 
   const removeItem = (id: string) => {
@@ -246,9 +251,18 @@ export default function QuickCheck() {
                 }}
               >
                 <div className="quick-card-content">
-                  {item.image && <img src={item.image} alt="" referrerPolicy="no-referrer" />}
+                  {item.image ? (
+                    <CellImage key={item.image} cell={item} />
+                  ) : (
+                    item.imageName && (
+                      <span className="ttt-img-missing">
+                        ⚠️ 找不到圖片
+                        <small>{item.imageName}</small>
+                      </span>
+                    )
+                  )}
                   {item.text && <p className={`ttt-text ${textSize(item.text, Boolean(item.image))}`}><BoardText text={item.text} font={font} hanzi={hanzi} /></p>}
-                  {!item.image && !item.text && <p className="quick-empty">空白卡</p>}
+                  {!item.image && !item.imageName && !item.text && <p className="quick-empty">空白卡</p>}
                 </div>
                 {marks[item.id] && (
                   <span className={`quick-result is-${marks[item.id]}`} aria-hidden="true">
