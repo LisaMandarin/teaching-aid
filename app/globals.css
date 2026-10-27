@@ -2906,6 +2906,32 @@ label.btn {
   width: 100%;
 }
 
+.quick-group-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1.5px dashed var(--paper-border);
+}
+
+.quick-group-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ink-soft);
+  font: 14px var(--font-body);
+}
+
+.quick-group-name input {
+  height: 38px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--paper-border);
+  border-radius: 6px;
+  background: #fffef8;
+  color: var(--ink);
+  font: 700 16px var(--font-body);
+}
+
 .quick-list {
   display: flex;
   flex-direction: column;
@@ -2964,9 +2990,95 @@ label.btn {
   cursor: pointer;
 }
 
-.quick-board .chalkboard {
+.chalkboard.quick-board {
   align-items: stretch;
   min-height: 620px;
+  overflow: hidden;
+}
+
+.quick-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 18px;
+}
+
+.quick-slides {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.quick-slide-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--chalk-dim);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--chalk);
+  font: 22px/1 var(--font-body);
+  cursor: pointer;
+}
+
+.quick-slide-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.quick-slide-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.quick-slide-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  color: var(--chalk);
+  font: 700 26px/1.15 var(--font-chalk);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.quick-slide-name small {
+  color: var(--chalk-dim);
+  font-size: 15px;
+}
+
+.quick-dots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.quick-dot {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid var(--chalk-dim);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.quick-dot.is-current {
+  border-color: var(--chalk);
+  background: var(--chalk);
+}
+
+.quick-empty-group {
+  grid-column: 1 / -1;
+  margin: 40px 0;
+  color: var(--chalk-dim);
+  font: 22px var(--font-chalk);
+  text-align: center;
 }
 
 .quick-score {
@@ -2984,12 +3096,72 @@ label.btn {
   border-radius: 8px;
 }
 
+/* Wide enough for three 注音 characters at the 40px minimum. */
 .quick-deck {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: 12px;
   width: 100%;
+  animation: quick-slide-in 0.35s ease-out;
 }
+
+.quick-deck.is-from-prev {
+  --slide-from: -48px;
+}
+
+@keyframes quick-slide-in {
+  from {
+    opacity: 0;
+    translate: var(--slide-from, 48px) 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-deck {
+    animation: none;
+  }
+}
+
+/* Card text: at most three characters a line (see CardText), never smaller than 40px.
+   --size is a share of the card width, so a line of three just fits; fewer characters show larger.
+   Specific enough to beat the shared .ttt-text sizes for each font (e.g. .has-cell-font .ttt-text.is-caption).
+   A word too long for the card at 40px breaks inside rather than being cut off; spaces still come first. */
+.quick-deck .quick-card .ttt-text.quick-text {
+  font-size: max(40px, var(--size));
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+
+.quick-line {
+  display: block;
+}
+
+.quick-text.is-1 { --size: 60cqi; }
+.quick-text.is-2 { --size: 40cqi; }
+.quick-text.is-3 { --size: 26cqi; }
+.quick-text.is-caption { --size: 20cqi; }
+
+/* 注音 fonts are about 1.5× as wide. */
+.has-cell-font .quick-text.is-1 { --size: 44cqi; }
+.has-cell-font .quick-text.is-2 { --size: 28cqi; }
+.has-cell-font .quick-text.is-3 { --size: 18cqi; }
+.has-cell-font .quick-text.is-caption { --size: 16cqi; }
+
+[data-font="zhuyin-only"] .quick-text.is-1 { --size: 66cqi; }
+[data-font="zhuyin-only"] .quick-text.is-2 { --size: 40cqi; }
+[data-font="zhuyin-only"] .quick-text.is-3 { --size: 26cqi; }
+[data-font="zhuyin-only"] .quick-text.is-caption { --size: 20cqi; }
+
+[data-font="hans-pinyin"] .quick-text.is-1 { --size: 46cqi; }
+[data-font="hans-pinyin"] .quick-text.is-2 { --size: 32cqi; }
+[data-font="hans-pinyin"] .quick-text.is-3 { --size: 21cqi; }
+[data-font="hans-pinyin"] .quick-text.is-caption { --size: 17cqi; }
+
+/* A line of three syllables is about six letters' width; it can still wrap at a space. */
+[data-font="pinyin-only"] .quick-text.is-1 { --size: 30cqi; }
+[data-font="pinyin-only"] .quick-text.is-2 { --size: 19cqi; }
+[data-font="pinyin-only"] .quick-text.is-3 { --size: 13cqi; }
+[data-font="pinyin-only"] .quick-text.is-caption { --size: 12cqi; }
 
 .quick-card {
   position: relative;
@@ -3029,7 +3201,7 @@ label.btn {
 
 .quick-card-content img {
   flex: 1 1 0;
-  min-height: 0;
+  min-height: 100px;
   width: 100%;
   object-fit: contain;
 }
@@ -3070,7 +3242,7 @@ label.btn {
     grid-template-columns: 1fr;
   }
 
-  .quick-board .chalkboard {
+  .chalkboard.quick-board {
     min-height: 420px;
   }
 }
