@@ -80,28 +80,31 @@ function itemsFrom(v: unknown): QuickItem[] | null {
 
 // Groups read back from saved data. Saves from before groups had one deck: `items`, shuffled into `deck`.
 function groupsFrom(saved: { groups?: unknown; items?: unknown; deck?: unknown } | null): QuickGroup[] | null {
-  if (Array.isArray(saved?.groups)) {
-    const groups: QuickGroup[] = [];
-    // Marks are kept by card id, so two cards (or groups) sharing an id would be revealed and counted together.
-    const groupIds = new Set<string>();
-    const itemIds = new Set<string>();
-    for (const g of saved.groups as Partial<QuickGroup>[]) {
-      const items = itemsFrom(g?.items);
-      if (!items || typeof g?.id !== "string" || typeof g.name !== "string" || groupIds.has(g.id)) return null;
-      groupIds.add(g.id);
-      for (const item of items) {
-        if (itemIds.has(item.id)) return null;
-        itemIds.add(item.id);
-      }
-      const group = { id: g.id, name: g.name, items, order: Array.isArray(g.order) ? g.order : [] };
-      groups.push({ ...group, order: deckOf(group).map((item) => item.id) });
-    }
-    return groups.length > 0 ? groups : null;
+  let groups: Partial<QuickGroup>[];
+  if (Array.isArray(saved?.groups)) groups = saved.groups;
+  else {
+    const items = itemsFrom(saved?.items);
+    if (!items) return null;
+    const deck = itemsFrom(saved?.deck);
+    groups = [{ id: newId(), name: groupName(0), items, order: (deck ?? shuffle(items)).map((item) => item.id) }];
   }
-  const items = itemsFrom(saved?.items);
-  if (!items) return null;
-  const deck = itemsFrom(saved?.deck);
-  return [{ id: newId(), name: groupName(0), items, order: (deck ?? shuffle(items)).map((item) => item.id) }];
+
+  const valid: QuickGroup[] = [];
+  // Marks are kept by card id, so two cards (or groups) sharing an id would be revealed and counted together.
+  const groupIds = new Set<string>();
+  const itemIds = new Set<string>();
+  for (const g of groups) {
+    const items = itemsFrom(g?.items);
+    if (!items || typeof g?.id !== "string" || typeof g.name !== "string" || groupIds.has(g.id)) return null;
+    groupIds.add(g.id);
+    for (const item of items) {
+      if (itemIds.has(item.id)) return null;
+      itemIds.add(item.id);
+    }
+    const group = { id: g.id, name: g.name, items, order: Array.isArray(g.order) ? g.order : [] };
+    valid.push({ ...group, order: deckOf(group).map((item) => item.id) });
+  }
+  return valid.length > 0 ? valid : null;
 }
 
 // ---------- Card text: at most three characters to a line ----------
