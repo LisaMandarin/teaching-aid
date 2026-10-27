@@ -3123,10 +3123,13 @@ label.btn {
 }
 
 /* Card text: at most three characters a line (see CardText), never smaller than 40px.
-   --size is a share of the card width, so a line of three just fits; fewer characters show larger. */
-.quick-card .quick-text {
+   --size is a share of the card width, so a line of three just fits; fewer characters show larger.
+   Specific enough to beat the shared .ttt-text sizes for each font (e.g. .has-cell-font .ttt-text.is-caption).
+   A word too long for the card at 40px breaks inside rather than being cut off; spaces still come first. */
+.quick-deck .quick-card .ttt-text.quick-text {
   font-size: max(40px, var(--size));
   flex-shrink: 0;
+  overflow-wrap: anywhere;
 }
 
 .quick-line {

@@ -57,11 +57,19 @@ const starterGroups = (): QuickGroup[] => {
   return [{ id: "starter", name: groupName(0), items, order: items.map((item) => item.id) }];
 };
 
-// The cards in board order; a card added since the last shuffle goes at the end.
+// The cards in board order: each card once, and a card added since the last shuffle at the end.
 function deckOf(group: QuickGroup): QuickItem[] {
   const byId = new Map(group.items.map((item) => [item.id, item]));
-  const placed = new Set(group.order);
-  return [...group.order.flatMap((id) => byId.get(id) ?? []), ...group.items.filter((item) => !placed.has(item.id))];
+  const placed = new Set<string>();
+  const deck: QuickItem[] = [];
+  for (const id of group.order) {
+    const item = byId.get(id);
+    if (item && !placed.has(id)) {
+      placed.add(id);
+      deck.push(item);
+    }
+  }
+  return [...deck, ...group.items.filter((item) => !placed.has(item.id))];
 }
 
 // Cards read back from saved data; null if any of them isn't a card. Older saves had no answer, which means Y.
@@ -74,11 +82,19 @@ function itemsFrom(v: unknown): QuickItem[] | null {
 function groupsFrom(saved: { groups?: unknown; items?: unknown; deck?: unknown } | null): QuickGroup[] | null {
   if (Array.isArray(saved?.groups)) {
     const groups: QuickGroup[] = [];
+    // Marks are kept by card id, so two cards (or groups) sharing an id would be revealed and counted together.
+    const groupIds = new Set<string>();
+    const itemIds = new Set<string>();
     for (const g of saved.groups as Partial<QuickGroup>[]) {
       const items = itemsFrom(g?.items);
-      if (!items || typeof g?.id !== "string" || typeof g.name !== "string") return null;
-      const order = Array.isArray(g.order) ? g.order.filter((id): id is string => typeof id === "string") : [];
-      groups.push({ id: g.id, name: g.name, items, order });
+      if (!items || typeof g?.id !== "string" || typeof g.name !== "string" || groupIds.has(g.id)) return null;
+      groupIds.add(g.id);
+      for (const item of items) {
+        if (itemIds.has(item.id)) return null;
+        itemIds.add(item.id);
+      }
+      const group = { id: g.id, name: g.name, items, order: Array.isArray(g.order) ? g.order : [] };
+      groups.push({ ...group, order: deckOf(group).map((item) => item.id) });
     }
     return groups.length > 0 ? groups : null;
   }
@@ -141,7 +157,8 @@ function CardText({ text, font, hanzi, withImage }: { text: string; font: FontId
   const line = (tokens: Token[]) => {
     if (!hanzi) return lineText(tokens);
     const pieces = tokens.flatMap((t) => (t.spaced ? [{ text: " " }, ...t.pieces] : t.pieces));
-    if (font === "pinyin-only") return pinyinLine(pieces);
+    // One syllable or word per place, with a space between each, so a word doesn't run into the next syllable.
+    if (font === "pinyin-only") return tokens.map((t) => pinyinLine(t.pieces)).join(" ");
     if (font === "hans") return <span lang="zh-Hans">{lineText(tokens)}</span>;
     return (
       <span lang="zh-Hans">
@@ -230,13 +247,17 @@ export default function QuickCheck() {
     return { right, wrong, pending: shownDeck.length - right - wrong };
   }, [shownDeck, marks]);
 
+  // False when there's no such slide, so the key that asked for it keeps doing what it normally does.
   const goTo = (index: number) => {
-    if (index < 0 || index >= groups.length || index === current) return;
+    if (index < 0 || index >= groups.length || index === current) return false;
     setDirection(index > current ? "next" : "prev");
     setCurrent(index);
+    return true;
   };
 
-  // ← → change slides, except while the teacher is typing in the editor.
+  // ← → change slides, except while the teacher is typing in the editor, or while another view is shown
+  // (Workspace keeps this one mounted, just hidden).
+  const rootRef = useRef<HTMLDivElement>(null);
   const goToRef = useRef(goTo);
   goToRef.current = goTo;
   const currentRef = useRef(current);
@@ -244,11 +265,10 @@ export default function QuickCheck() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
+      if (!rootRef.current || rootRef.current.closest("[hidden]")) return;
       if (target?.closest("input, select, textarea, [contenteditable='true']")) return;
-      if (event.key === "ArrowRight" || event.key === "PageDown") goToRef.current(currentRef.current + 1);
-      else if (event.key === "ArrowLeft" || event.key === "PageUp") goToRef.current(currentRef.current - 1);
-      else return;
-      event.preventDefault();
+      const step = event.key === "ArrowRight" || event.key === "PageDown" ? 1 : event.key === "ArrowLeft" || event.key === "PageUp" ? -1 : 0;
+      if (step !== 0 && goToRef.current(currentRef.current + step)) event.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -398,7 +418,7 @@ export default function QuickCheck() {
   const groupHasMarks = group.items.some((item) => marks[item.id]);
 
   return (
-    <div className="game quick">
+    <div className="game quick" ref={rootRef}>
       <header className="page-header">
         <h1 className="page-title">Quick Check 快判卡</h1>
         <div className="page-tools">
