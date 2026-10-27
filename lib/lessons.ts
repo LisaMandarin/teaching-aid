@@ -334,11 +334,36 @@ export async function downloadTemplate() {
   );
 }
 
+// The template's sample groups, one sheet each.
+const QUICK_CHECK_GROUPS = [
+  {
+    sheet: "第一組",
+    rows: [
+      ["早餐", "", "Y"],
+      ["午餐", "lunch.jpg", "Y"],
+      ["晚餐", "https://example.com/dinner.jpg", "N"],
+      ["點心", "", "N"],
+    ],
+  },
+  {
+    sheet: "第二組",
+    rows: [
+      ["香蕉", "", "Y"],
+      ["芭蕉扇", "", "N"],
+      ["孫悟空", "", "Y"],
+      ["鐵扇公主", "", "N"],
+    ],
+  },
+];
+
 export async function downloadQuickCheckTemplate() {
   const help = [
     "「Quick Check 快判卡」素材範本",
     "",
-    "・在「素材」工作表中，每列會成為一張卡片。",
+    "・每個素材工作表是一組，畫面上一次顯示一組，用 ◀ ▶ 或鍵盤左右鍵像投影片一樣換組。",
+    "・工作表名稱就是組名；可以新增、複製或改名工作表，組的順序和工作表順序相同。",
+    "・每個素材工作表中，每列會成為一張卡片。",
+    "・卡片上的字每行最多三個字，比較長的會自動換行，注音和拼音才看得清楚。",
     "・「文字」和「圖片」可以只填一種，也可以兩種都填。",
     "・「Y/N」填 Y 代表正確，填 N 代表錯誤；點擊卡片後才會揭曉。",
     "・破音字可在字後標記讀音，例如：長[ㄓㄤˇ]大、音樂[ㄩㄝˋ]、銀行[ㄏㄤˊ]。",
@@ -367,18 +392,12 @@ export async function downloadQuickCheckTemplate() {
           [FONT_LABEL, FONTS[0].name],
         ],
       },
-      {
-        sheet: "素材",
+      ...QUICK_CHECK_GROUPS.map(({ sheet, rows }) => ({
+        sheet,
         columns: [{ width: 24 }, { width: 50 }, { width: 12 }],
         stickyRowsCount: 1,
-        data: [
-          [{ value: "文字", ...bold }, { value: "圖片", ...bold }, { value: "Y/N", ...bold }],
-          ["早餐", "", "Y"],
-          ["午餐", "lunch.jpg", "Y"],
-          ["晚餐", "https://example.com/dinner.jpg", "N"],
-          ["點心", "", "N"],
-        ],
-      },
+        data: [[{ value: "文字", ...bold }, { value: "圖片", ...bold }, { value: "Y/N", ...bold }], ...rows],
+      })),
       {
         sheet: OPTIONS_SHEET,
         data: [
@@ -392,7 +411,7 @@ export async function downloadQuickCheckTemplate() {
     "快判卡素材範本.xlsx",
     {
       dropdowns: [
-        { sheet: "素材", range: "C2:C200", source: listRef(OPTIONS_SHEET, "A", 2, 3) },
+        ...QUICK_CHECK_GROUPS.map(({ sheet }) => ({ sheet, range: "C2:C200", source: listRef(OPTIONS_SHEET, "A", 2, 3) })),
         { sheet: SETTINGS_SHEET, range: "B4", source: listRef(OPTIONS_SHEET, "B", 2, FONTS.length + 1) },
       ],
       hidden: [OPTIONS_SHEET],
