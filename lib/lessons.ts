@@ -128,7 +128,13 @@ export type ParsedWorkbook = {
   font?: FontId;
 };
 
-export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
+// `answerHeader` is another name a game gives the Y/N column; it only counts next to a 文字 or 圖片 header, since on
+// its own it could be a word in a sheet with no header row. `unclearAnswer` tells the teacher what happens to a card
+// whose Y/N column can't be read.
+export async function parseWorkbook(
+  file: File,
+  { answerHeader, unclearAnswer = "這張卡先當作 Y" }: { answerHeader?: string; unclearAnswer?: string } = {},
+): Promise<ParsedWorkbook> {
   const { default: readXlsxFile } = await import("read-excel-file/browser");
   const [sheets, polyphones] = await Promise.all([readXlsxFile(file), loadPolyphones()]);
 
@@ -165,8 +171,9 @@ export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
     const header = rows[0].map(cellText);
     let textCol = header.findIndex((h) => h.includes("文字"));
     let imageCol = header.findIndex((h) => h.includes("圖片"));
-    const answerCol = header.findIndex((h) => /^(Y\s*\/\s*N|答案|正確)$/i.test(h));
-    const hasHeader = textCol !== -1 || imageCol !== -1 || answerCol !== -1;
+    const hasNamedColumns = textCol !== -1 || imageCol !== -1;
+    const answerCol = header.findIndex((h) => /^(Y\s*\/\s*N|答案|正確)$/i.test(h) || (hasNamedColumns && h === answerHeader));
+    const hasHeader = hasNamedColumns || answerCol !== -1;
     if (textCol === -1) textCol = imageCol === 0 ? 1 : 0;
     if (imageCol === -1) imageCol = textCol === 1 ? 0 : 1;
 
@@ -179,7 +186,7 @@ export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
 
       const correct = answer === "N" ? false : answer === "Y" ? true : undefined;
       if (answer && correct === undefined)
-        warnings.push(`「${name}」的「${raw || img}」：Y/N 欄請填 Y 或 N，這張卡先當作 Y。`);
+        warnings.push(`「${name}」的「${raw || img}」：Y/N 欄請填 Y 或 N，${unclearAnswer}。`);
 
       // 長[ㄓㄤˇ] → 長 + the variation selector the 注音 fonts use for that reading.
       const { text, problems } = applyReadings(raw, polyphones);
