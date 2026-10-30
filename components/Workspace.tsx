@@ -16,7 +16,6 @@ import Rewards from "./Rewards";
 import RockPaperScissors from "./RockPaperScissors";
 import SlotMachine from "./SlotMachine";
 import TicTacToe from "./TicTacToe";
-import WhatIsMissing from "./WhatIsMissing";
 
 const views = [
   { href: "/", fill: false, render: () => <Hangman /> },
@@ -25,7 +24,6 @@ const views = [
   { href: "/read-aloud", fill: true, render: () => <ReadAloud /> },
   { href: "/fill-blank", fill: true, render: () => <FillBlank /> },
   { href: "/quick-check", fill: true, render: () => <QuickCheck /> },
-  { href: "/whats-missing", fill: true, render: () => <WhatIsMissing /> },
   { href: "/instant-camera", fill: true, render: () => <InstantCamera /> },
   { href: "/slot-machine", fill: true, render: () => <SlotMachine /> },
   { href: "/rock-paper-scissors", fill: true, render: () => <RockPaperScissors /> },

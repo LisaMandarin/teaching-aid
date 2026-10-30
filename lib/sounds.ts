@@ -329,39 +329,6 @@ export function playCardShuffle(seconds: number) {
   }
 }
 
-// 少了什麼: a falling whoosh with a soft tone sinking under it, as long as the cards take to fade out.
-// Ignores the games' mute switch; the page has its own.
-export function playVanish() {
-  const ac = audio();
-  const t = ac.currentTime;
-  const dur = 0.55;
-
-  const src = ac.createBufferSource();
-  src.buffer = noiseBuffer(ac, dur);
-  const band = ac.createBiquadFilter();
-  band.type = "bandpass";
-  band.frequency.setValueAtTime(3200, t);
-  band.frequency.exponentialRampToValueAtTime(300, t + dur);
-  band.Q.value = 1.4;
-  const air = ac.createGain();
-  air.gain.setValueAtTime(0, t);
-  air.gain.linearRampToValueAtTime(0.55, t + 0.06);
-  air.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  src.connect(band).connect(air).connect(ac.destination);
-  src.start(t);
-
-  const osc = ac.createOscillator();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(880, t);
-  osc.frequency.exponentialRampToValueAtTime(140, t + dur);
-  const tone = ac.createGain();
-  tone.gain.setValueAtTime(0.25, t);
-  tone.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  osc.connect(tone).connect(ac.destination);
-  osc.start(t);
-  osc.stop(t + dur);
-}
-
 // 抽牌: a card sliding off the deck or flipping over, a short swish.
 export function playCardFlick() {
   const ac = audio();
