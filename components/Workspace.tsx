@@ -6,7 +6,6 @@ import CardDraw from "./CardDraw";
 import FillBlank from "./FillBlank";
 import GiftBoxes from "./GiftBoxes";
 import Hangman from "./Hangman";
-import Home from "./Home";
 import ImageResizer from "./ImageResizer";
 import InstantCamera from "./InstantCamera";
 import Materials from "./Materials";
@@ -17,17 +16,14 @@ import Rewards from "./Rewards";
 import RockPaperScissors from "./RockPaperScissors";
 import SlotMachine from "./SlotMachine";
 import TicTacToe from "./TicTacToe";
-import WhatIsMissing from "./WhatIsMissing";
 
 const views = [
-  { href: "/", fill: true, render: () => <Home /> },
-  { href: "/hangman", fill: false, render: () => <Hangman /> },
+  { href: "/", fill: false, render: () => <Hangman /> },
   { href: "/tic-tac-toe", fill: false, render: () => <TicTacToe /> },
   { href: "/gifts", fill: true, render: () => <GiftBoxes /> },
   { href: "/read-aloud", fill: true, render: () => <ReadAloud /> },
   { href: "/fill-blank", fill: true, render: () => <FillBlank /> },
   { href: "/quick-check", fill: true, render: () => <QuickCheck /> },
-  { href: "/whats-missing", fill: true, render: () => <WhatIsMissing /> },
   { href: "/instant-camera", fill: true, render: () => <InstantCamera /> },
   { href: "/slot-machine", fill: true, render: () => <SlotMachine /> },
   { href: "/rock-paper-scissors", fill: true, render: () => <RockPaperScissors /> },
