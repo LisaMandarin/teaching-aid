@@ -58,15 +58,53 @@ export function scatter(count: number): Spot[] {
   }));
 }
 
-// For a card added later: the square farthest from every card, which stay where the teacher put them.
-export function freeSpot(items: MissingItem[]): Spot {
-  const { cols, rows } = gridFor(items.length + 1);
-  const squares = Array.from({ length: cols * rows }, (_, i) => ({
-    x: ((i % cols) + 0.5) * (100 / cols),
-    y: (Math.floor(i / cols) + 0.5) * (100 / rows),
-  }));
-  const room = (spot: Spot) => Math.min(...items.map((item) => Math.hypot(item.x - spot.x, item.y - spot.y)));
-  return squares.reduce((best, spot) => (room(spot) > room(best) ? spot : best));
+// The pairs of cards that touch at the size a board of `count` cards gives them, as "i-j" indexes into `items`.
+function touchingPairs(items: MissingItem[], count: number) {
+  const { width, height } = cardSize(count);
+  const spots = items.map((item) => keepOnBoard(item, count));
+  const pairs = new Set<string>();
+  spots.forEach((a, i) => {
+    for (let j = i + 1; j < spots.length; j++)
+      if (Math.abs(a.x - spots[j].x) < width && Math.abs(a.y - spots[j].y) < height) pairs.add(`${i}-${j}`);
+  });
+  return pairs;
+}
+
+const scattered = (items: MissingItem[]) => {
+  const spots = scatter(items.length);
+  return items.map((item, i) => ({ ...item, ...spots[i] }));
+};
+
+// Cards change size with their number, so a change in number can push cards together.
+// Pairs the teacher already overlapped by dragging don't count: only a pair that was apart scatters the board.
+function pushedTogether(items: MissingItem[], before: number, after: number) {
+  const touching = touchingPairs(items, before);
+  return [...touchingPairs(items, after)].some((pair) => !touching.has(pair));
+}
+
+export function withoutCard(items: MissingItem[], id: string): MissingItem[] {
+  const left = items.filter((item) => item.id !== id);
+  return pushedTogether(left, items.length, left.length) ? scattered(left) : left;
+}
+
+// The cards with a new one added where it fits, as far from the others as possible: they stay where the teacher put
+// them. With no room left, or when the new size pushes them together, the whole board is scattered again.
+export function withNewCard(items: MissingItem[], card: Omit<MissingItem, "x" | "y">): MissingItem[] {
+  const count = items.length + 1;
+  const { width, height } = cardSize(count);
+  const others = items.map((item) => keepOnBoard(item, count));
+  const fits = ({ x, y }: Spot) => others.every((o) => Math.abs(o.x - x) >= width || Math.abs(o.y - y) >= height);
+  const room = ({ x, y }: Spot) => Math.min(...others.map((o) => Math.hypot(o.x - x, o.y - y)));
+
+  const spots: Spot[] = [];
+  for (let x = width / 2; x <= 100 - width / 2; x += 2)
+    for (let y = height / 2; y <= 100 - height / 2; y += 2) if (fits({ x, y })) spots.push({ x, y });
+  if (spots.length > 0 && !pushedTogether(items, items.length, count)) {
+    const best = spots.reduce((a, b) => (room(b) > room(a) ? b : a));
+    return [...items, { ...card, ...best }];
+  }
+
+  return scattered([...items, { ...card, x: 0, y: 0 }]);
 }
 
 const isSpot = (v: unknown) => Number.isFinite((v as Spot)?.x) && Number.isFinite((v as Spot)?.y);

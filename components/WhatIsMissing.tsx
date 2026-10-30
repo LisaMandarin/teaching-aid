@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Chalkboard from "./Chalkboard";
 import { BoardText, CellImage, textSize, useHanzi } from "./CellContent";
@@ -9,13 +10,14 @@ import { attachLocalImages, parseWorkbook, readImage, type ParsedWorkbook } from
 import {
   cardSize,
   downloadMissingTemplate,
-  freeSpot,
   groupsFrom,
   keepOnBoard,
   newId,
   scatter,
   type MissingGroup,
   type MissingItem,
+  withNewCard,
+  withoutCard,
 } from "@/lib/missing";
 import { playSoundFile, playVanish, preloadSoundFile } from "@/lib/sounds";
 import { keepBroken, readSaved, writeSaved } from "@/lib/storage";
@@ -29,7 +31,7 @@ const MUTE_KEY = "whats-missing-muted";
 const REVEAL_SOUND = "/sounds/correct_answer.mp3";
 const groupName = (index: number) => `第 ${index + 1} 組`;
 
-// Fixed spots: the server renders the starter cards too, and its layout has to match.
+// Placed by hand, so the first board looks scattered without needing the random placement.
 const starterGroups = (): MissingGroup[] => [
   {
     id: "starter",
@@ -119,8 +121,11 @@ export default function WhatIsMissing() {
     setGroups((prev) => prev.map((g) => (g.id === id ? change(g) : g)));
   const updateItems = (change: (items: MissingItem[]) => MissingItem[]) =>
     updateGroup(group.id, (g) => ({ ...g, items: change(g.items) }));
+  // Finds the card in every group: a picture can finish loading after the teacher has moved to another group.
   const updateItem = (id: string, patch: Partial<MissingItem>) =>
-    updateItems((items) => items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    setGroups((prev) =>
+      prev.map((g) => ({ ...g, items: g.items.map((item) => (item.id === id ? { ...item, ...patch } : item)) })),
+    );
 
   const applyImport = (parsed: ParsedWorkbook, missingImages: string[]) => {
     const imported = parsed.lessons.map((lesson) => {
@@ -157,7 +162,7 @@ export default function WhatIsMissing() {
     setNotice(null);
     setPendingImport(null);
     try {
-      const parsed = await parseWorkbook(file, "這張卡先不消失");
+      const parsed = await parseWorkbook(file, { answerHeader: "消失", unclearAnswer: "這張卡先不消失" });
       if (run !== importRun.current) return;
       if (parsed.lessons.length === 0) {
         setNotice({ lines: [], warnings: ["這個檔案裡找不到素材。請用範本格式，第一列填「文字」「圖片」「消失」。"] });
@@ -216,10 +221,12 @@ export default function WhatIsMissing() {
     updateItems((items) => items.map((item, i) => ({ ...item, ...spots[i] })));
   };
 
-  const addBlank = () =>
-    updateItems((items) => [...items, { id: newId(), text: "", image: null, ...freeSpot(items), missing: false }]);
+  const addBlank = () => {
+    const card = { id: newId(), text: "", image: null, missing: false };
+    updateItems((items) => withNewCard(items, card));
+  };
 
-  const removeItem = (id: string) => updateItems((items) => items.filter((item) => item.id !== id));
+  const removeItem = (id: string) => updateItems((items) => withoutCard(items, id));
 
   // 長[ㄓㄤˇ] typed into a card becomes 長 with its reading picked, once the teacher leaves the field.
   const finishText = async (id: string, text: string) => {
@@ -235,19 +242,50 @@ export default function WhatIsMissing() {
     if (done.notice) setNotice({ lines: [], warnings: [done.notice] });
   };
 
+  // The latest pick for each card, so a slower, earlier picture doesn't replace it.
+  const imagePicks = useRef<Record<string, number>>({});
+
   const setImage = async (id: string, file: File | undefined) => {
     if (!file || !file.type.startsWith("image/")) return;
+    const pick = (imagePicks.current[id] ?? 0) + 1;
+    imagePicks.current[id] = pick;
     try {
-      updateItem(id, { image: await readImage(file), imageName: file.name });
+      const image = await readImage(file);
+      if (pick === imagePicks.current[id]) updateItem(id, { image, imageName: file.name });
     } catch (e) {
-      alert((e as Error).message);
+      if (pick === imagePicks.current[id]) alert((e as Error).message);
     }
   };
 
   // In 設定 a card is dragged to move it; pressing it without moving marks it to disappear.
   const fieldRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: string; startX: number; startY: number; offsetX: number; offsetY: number; moved: boolean } | null>(null);
+  const drag = useRef<
+    { pointerId: number; id: string; startX: number; startY: number; offsetX: number; offsetY: number; moved: boolean } | null
+  >(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const cancelDrag = () => {
+    drag.current = null;
+    setDraggingId(null);
+  };
+
+  // A finger lifted away from its card, once the card no longer has the pointer, only reaches the window.
+  useEffect(() => {
+    const stop = (event: PointerEvent) => event.pointerId === drag.current?.pointerId && cancelDrag();
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+    return () => {
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+    };
+  }, []);
+
+  // Settings closed, the view hidden (Workspace keeps it mounted), or the card gone (another group, deleted)
+  // while a finger was still down.
+  const showing = usePathname() === "/whats-missing";
+  useEffect(() => {
+    if (drag.current && (!showing || !editing || !group.items.some((item) => item.id === drag.current?.id))) cancelDrag();
+  }, [showing, editing, group]);
 
   const spotAt = (event: React.PointerEvent) => {
     const box = fieldRef.current!.getBoundingClientRect();
@@ -255,22 +293,26 @@ export default function WhatIsMissing() {
   };
 
   const startDrag = (event: React.PointerEvent, item: MissingItem) => {
-    if (!editing || event.button !== 0) return;
+    // One card at a time: a second finger on the board is ignored.
+    if (!editing || event.button !== 0 || drag.current) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     const at = spotAt(event);
+    // Where the card is drawn, which can differ from the saved spot when cards have grown.
+    const spot = keepOnBoard(item, group.items.length);
     drag.current = {
+      pointerId: event.pointerId,
       id: item.id,
       startX: event.clientX,
       startY: event.clientY,
-      offsetX: item.x - at.x,
-      offsetY: item.y - at.y,
+      offsetX: spot.x - at.x,
+      offsetY: spot.y - at.y,
       moved: false,
     };
   };
 
   const moveDrag = (event: React.PointerEvent) => {
     const d = drag.current;
-    if (!d) return;
+    if (d?.pointerId !== event.pointerId) return;
     if (!d.moved && Math.hypot(event.clientX - d.startX, event.clientY - d.startY) < 6) return;
     d.moved = true;
     setDraggingId(d.id);
@@ -278,11 +320,11 @@ export default function WhatIsMissing() {
     updateItem(d.id, keepOnBoard({ x: at.x + d.offsetX, y: at.y + d.offsetY }, group.items.length));
   };
 
-  const endDrag = (item: MissingItem) => {
+  const endDrag = (event: React.PointerEvent, item: MissingItem) => {
     const d = drag.current;
-    drag.current = null;
-    setDraggingId(null);
-    if (d && !d.moved) updateItem(item.id, { missing: !item.missing });
+    if (d?.pointerId !== event.pointerId) return;
+    cancelDrag();
+    if (!d.moved) updateItem(item.id, { missing: !item.missing });
   };
 
   const hideCards = () => {
@@ -412,8 +454,9 @@ export default function WhatIsMissing() {
             data-font={font}
             style={cellFont ? ({ "--cell-font": `${cellFont}, var(--font-board-text)` } as React.CSSProperties) : undefined}
           >
-            {group.items.length === 0 && <p className="quick-empty-group">這一組還沒有卡片，按「⚙️ 設定」新增。</p>}
-            {group.items.map((item) => {
+            {loaded && group.items.length === 0 && <p className="quick-empty-group">這一組還沒有卡片，按「⚙️ 設定」新增。</p>}
+            {/* Not until the saved round is back: a reload mid-round must not flash the cards that are gone. */}
+            {loaded && group.items.map((item) => {
               const spot = keepOnBoard(item, group.items.length);
               const withImage = Boolean(item.image || item.imageName);
               const state = !item.missing ? "" : phase === "hidden" ? "is-gone" : phase === "revealed" ? "is-found" : editing ? "is-marked" : "";
@@ -436,28 +479,27 @@ export default function WhatIsMissing() {
                   })}
                   onPointerDown={(event) => startDrag(event, item)}
                   onPointerMove={moveDrag}
-                  onPointerUp={() => endDrag(item)}
-                  onPointerCancel={() => {
-                    drag.current = null;
-                    setDraggingId(null);
-                  }}
+                  onPointerUp={(event) => endDrag(event, item)}
+                  onLostPointerCapture={(event) => event.pointerId === drag.current?.pointerId && cancelDrag()}
                 >
-                  {item.image ? (
-                    <CellImage key={item.image} cell={item} />
-                  ) : (
-                    item.imageName && (
-                      <span className="ttt-img-missing">
-                        ⚠️ 找不到圖片
-                        <small>{item.imageName}</small>
-                      </span>
-                    )
-                  )}
-                  {item.text.trim() && (
-                    <p className={`ttt-text ${textSize(item.text, withImage)}`}>
-                      <BoardText text={item.text.trim()} font={font} hanzi={hanzi} />
-                    </p>
-                  )}
-                  {!withImage && !item.text.trim() && <p className="missing-blank">空白卡</p>}
+                  <div className="missing-card-content">
+                    {item.image ? (
+                      <CellImage key={item.image} cell={item} />
+                    ) : (
+                      item.imageName && (
+                        <span className="ttt-img-missing">
+                          ⚠️ 找不到圖片
+                          <small>{item.imageName}</small>
+                        </span>
+                      )
+                    )}
+                    {item.text.trim() && (
+                      <p className={`ttt-text ${textSize(item.text, withImage)}`}>
+                        <BoardText text={item.text.trim()} font={font} hanzi={hanzi} />
+                      </p>
+                    )}
+                    {!withImage && !item.text.trim() && <p className="missing-blank">空白卡</p>}
+                  </div>
                 </article>
               );
             })}
