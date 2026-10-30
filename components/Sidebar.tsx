@@ -14,6 +14,7 @@ const games = [
   { href: "/read-aloud", name: "Read Aloud 唸課文" },
   { href: "/fill-blank", name: "Fill in the Blanks 填空" },
   { href: "/quick-check", name: "Quick Check 快判卡" },
+  { href: "/whats-missing", name: "What is Missing? 少了什麼" },
   { href: "/instant-camera", name: "Instant Camera 立可拍" },
   { href: "/slot-machine", name: "Slot Machine 拉霸機" },
   { href: "/rock-paper-scissors", name: "Rock Paper Scissors 剪刀石頭布" },
@@ -27,6 +28,7 @@ const CLASS_DATA_KEYS = [
   "read-aloud",
   "fill-blank",
   "quick-check",
+  "whats-missing",
   "instant-camera",
   "slot-machine",
   "rock-paper-scissors",
@@ -36,7 +38,7 @@ const CLASS_DATA_KEYS = [
 ];
 
 async function clearClassData() {
-  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空、快判卡、拉霸機、抽牌的內容，剪刀石頭布的隊名和分數，立可拍的照片和文字，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
+  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空、快判卡、少了什麼、拉霸機、抽牌的內容，剪刀石頭布的隊名和分數，立可拍的照片和文字，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
   for (;;) {
     const failed: string[] = [];
     try {
