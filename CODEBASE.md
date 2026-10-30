@@ -10,7 +10,7 @@
 | --- | --- |
 | 框架 | `package.json` 宣告 Next.js `^16.3.6`、React／React DOM `^19.3.0` |
 | 語言 | TypeScript，啟用 `strict`；`@/*` 對應專案根目錄 |
-| 路由 | `app/`，共 15 個功能路由 |
+| 路由 | `app/`，主頁加 15 個功能路由 |
 | 畫面與互動 | `components/`；各功能主要使用 React hooks 管理狀態 |
 | 邏輯與資料處理 | `lib/`，包含檔案解析、文字轉換、儲存、音效等 |
 | 資料保存 | localStorage 存設定與部分進度；IndexedDB 存教材、照片 |
@@ -23,12 +23,13 @@
 teaching-aid/
 ├── app/                     # App Router、根版型與全域樣式
 │   ├── layout.tsx           # 字型、metadata、Sidebar、Workspace、WelcomeDialog
-│   ├── page.tsx             # /，對應吊人遊戲
+│   ├── page.tsx             # /，對應主頁
 │   ├── globals.css          # 全站布局、各功能樣式與動畫
 │   └── <功能>/page.tsx      # 其餘 14 個功能路由
 ├── components/              # 功能畫面與共用 UI
 │   ├── Workspace.tsx        # 路徑對應畫面、保留已開啟的功能
-│   ├── Sidebar.tsx          # 導覽、教材清單、清除遊戲設定
+│   ├── Sidebar.tsx          # 本堂課與教材導覽
+│   ├── Home.tsx             # 主頁：勾選本堂課項目、清除遊戲設定
 │   ├── WelcomeDialog.tsx    # 歡迎視窗與 LINE 資訊
 │   ├── CellContent.tsx      # 共用文字、拼音與格子圖片顯示
 │   ├── Chalkboard.tsx       # 黑板容器
@@ -60,7 +61,7 @@ teaching-aid/
 
 ```text
 app/layout.tsx
-├── Sidebar                 導覽連結與教材清單
+├── Sidebar                 本堂課的連結與教材清單
 ├── main.stage
 │   ├── Workspace           依 usePathname() 顯示功能元件
 │   │   ├── 目前功能         顯示
@@ -79,7 +80,8 @@ app/layout.tsx
 
 | 網址 | 功能 | 主要元件 | 主要邏輯／資料處理 |
 | --- | --- | --- | --- |
-| `/` | 吊人遊戲 | `Hangman.tsx`、`HangmanBoard.tsx` | 筆畫與遊戲狀態在元件內；`sounds.ts` |
+| `/` | 主頁 | `Home.tsx` | `activities.ts`：所有遊戲與工具、本堂課勾選的項目 |
+| `/hangman` | 吊人遊戲 | `Hangman.tsx`、`HangmanBoard.tsx` | 筆畫與遊戲狀態在元件內；`sounds.ts` |
 | `/tic-tac-toe` | 圈圈叉叉 | `TicTacToe.tsx` | `lessons.ts`：題庫匯入、抽題、圖片 |
 | `/gifts` | 開禮物 | `GiftBoxes.tsx` | `gifts.ts`：禮物設定、種類、範本與匯入 |
 | `/read-aloud` | 唸課文 | `ReadAloud.tsx` | `readAloud.ts`、`runEditor.ts` |
@@ -99,6 +101,7 @@ app/layout.tsx
 
 | 檔案 | 職責 |
 | --- | --- |
+| `activities.ts` | 所有遊戲與工具的清單；本堂課勾選的項目（主頁與側欄共用） |
 | `lessons.ts` | `Cell`、`Lesson` 題庫模型；圈圈叉叉／快判卡 Excel 匯入與範本；洗牌、抽題、本機圖片配對及 Dropbox／Drive 圖片網址處理 |
 | `gifts.ts` | 禮物、盒面與顏色設定，Excel 解析和範本 |
 | `slots.ts` | 轉輪資料與限制、Excel 解析和範本 |
@@ -148,9 +151,9 @@ PDF／教材圖片 → materials → IndexedDB → Blob URL → 教材畫面
 | IndexedDB：`teaching-aid`／`materials` | 教材 PDF／圖片 Blob 與檔案資訊 | `materials.ts`、`idb.ts` |
 | IndexedDB：`teaching-aid-camera`／`photos` | 立可拍照片 Blob、尺寸及匯入順序 | `camera.ts`、`idb.ts` |
 
-課堂資料的主要 localStorage keys 是 `tictactoe-setup`、`gifts-setup`、`read-aloud`、`fill-blank`、`quick-check`、`whats-missing`、`instant-camera`、`slot-machine`、`rock-paper-scissors`、`card-draw`、`draw-list`、`rewards-roster`。
+課堂資料的主要 localStorage keys 是 `class-picks`、`tictactoe-setup`、`gifts-setup`、`read-aloud`、`fill-blank`、`quick-check`、`whats-missing`、`instant-camera`、`slot-machine`、`rock-paper-scissors`、`card-draw`、`draw-list`、`rewards-roster`。
 
-「清除所有遊戲設定」由 `Sidebar.tsx` 的 `CLASS_DATA_KEYS` 與 `clearClassData()` 管理：移除指定 keys、清除立可拍照片，再重新整理頁面。教材、獨立存放的靜音及字型偏好會保留。新增需要一起清除的課堂資料時，需同步更新這裡。
+「清除所有遊戲設定」由 `Home.tsx` 的 `CLASS_DATA_KEYS` 與 `clearClassData()` 管理：移除指定 keys、清除立可拍照片，再重新整理頁面。教材、獨立存放的靜音及字型偏好會保留。新增需要一起清除的課堂資料時，需同步更新這裡。
 
 目前沒有跨裝置同步；資料保存於使用中的瀏覽器與網站來源。Google Fonts、外部圖片網址仍可能需要網路，不能將瀏覽器端儲存視為完整離線支援。
 
@@ -168,14 +171,14 @@ PDF／教材圖片 → materials → IndexedDB → Blob URL → 教材畫面
 
 | 修改目標 | 優先查看 |
 | --- | --- |
-| 新增一個功能頁 | `app/<功能>/page.tsx`、`Workspace.tsx` 的 `views`、`Sidebar.tsx` 的導覽清單、對應功能元件 |
+| 新增一個功能頁 | `app/<功能>/page.tsx`、`Workspace.tsx` 的 `views`、`lib/activities.ts` 的清單、對應功能元件 |
 | 調整某個遊戲規則／互動 | 對應 `components/*.tsx`，以及上方路由表列出的邏輯模組 |
 | 修改 Excel 欄位／範本 | 對應功能的 `lib/*.ts`；共用下拉選單機制在 `excel.ts` |
 | 修改課文編輯或 DOCX 匯入 | `readAloud.ts`、`runEditor.ts`；挖空規則另看 `fillBlank.ts` |
 | 修改字型、注音、簡體或拼音 | `fonts.ts`、`zhuyin.ts`、`hanzi.ts`、`CellContent.tsx` |
 | 修改教材／照片保存 | `materials.ts`、`camera.ts`、`idb.ts` |
 | 修改全站外觀 | `school-theme.css` 與 `app/globals.css` |
-| 修改課堂資料重設 | `Sidebar.tsx` 的清除資料流程 |
+| 修改課堂資料重設 | `Home.tsx` 的清除資料流程 |
 
 開發指令：`npm run dev` 啟動開發環境，`npm run build` 建置，`npm run start` 啟動建置後的應用程式。更新破音字資料執行 `node scripts/build-polyphones.mjs`，會從上游下載資料並覆寫 `lib/polyphones.json`。
 

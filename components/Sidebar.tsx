@@ -3,81 +3,25 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { clearPhotos } from "@/lib/camera";
+import { activities, savePicks, usePicks } from "@/lib/activities";
 import { LINE_QR, LINE_URL } from "@/lib/line";
 import { selectMaterial, useMaterials } from "@/lib/materials";
-
-const games = [
-  { href: "/", name: "Hangman 吊人遊戲" },
-  { href: "/tic-tac-toe", name: "Tic-Tac-Toe 圈圈叉叉" },
-  { href: "/gifts", name: "Mystery Gift 開禮物" },
-  { href: "/read-aloud", name: "Read Aloud 唸課文" },
-  { href: "/fill-blank", name: "Fill in the Blanks 填空" },
-  { href: "/quick-check", name: "Quick Check 快判卡" },
-  { href: "/whats-missing", name: "What is Missing? 少了什麼" },
-  { href: "/instant-camera", name: "Instant Camera 立可拍" },
-  { href: "/slot-machine", name: "Slot Machine 拉霸機" },
-  { href: "/rock-paper-scissors", name: "Rock Paper Scissors 剪刀石頭布" },
-  { href: "/cards", name: "Draw a Card 抽牌" },
-];
-
-// Everything a teacher sets up for one class (and 立可拍's photos); sounds, fonts and uploaded materials stay.
-const CLASS_DATA_KEYS = [
-  "tictactoe-setup",
-  "gifts-setup",
-  "read-aloud",
-  "fill-blank",
-  "quick-check",
-  "whats-missing",
-  "instant-camera",
-  "slot-machine",
-  "rock-paper-scissors",
-  "card-draw",
-  "draw-list",
-  "rewards-roster",
-];
-
-async function clearClassData() {
-  if (!confirm("確定要清除所有遊戲設定嗎？\n\n包含圈圈叉叉、開禮物、唸課文、填空、快判卡、少了什麼、拉霸機、抽牌的內容，剪刀石頭布的隊名和分數，立可拍的照片和文字，以及抽籤名單和我的獎勵。教材不會被刪除。")) return;
-  for (;;) {
-    const failed: string[] = [];
-    try {
-      // `:broken` holds saved data a game couldn't read; it's class data too.
-      CLASS_DATA_KEYS.forEach((key) => {
-        localStorage.removeItem(key);
-        localStorage.removeItem(`${key}:broken`);
-      });
-    } catch {
-      failed.push("遊戲設定");
-    }
-    try {
-      await clearPhotos();
-    } catch {
-      failed.push("立可拍的照片");
-    }
-    if (failed.length === 0) break;
-    if (!confirm(`${failed.join("和")}沒有清除成功。要再試一次嗎？\n\n如果一直失敗，請關掉其他開著這個網站的分頁再試。`)) break;
-  }
-  // Every game is kept mounted, so reload to make them all start empty (and show what's left if something failed).
-  location.reload();
-}
 
 // Phone width: the open sidebar covers the page instead of squeezing it (see .sidebar in globals.css).
 const NARROW = "(max-width: 700px)";
 const isNarrow = () => window.matchMedia(NARROW).matches;
 
-const tools = [
-  { href: "/rewards", name: "我的獎勵" },
-  { href: "/draw", name: "抽籤筒" },
-  { href: "/image-resizer", name: "圖片瘦身" },
-];
-
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
-  const [gamesOpen, setGamesOpen] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
   const pathname = usePathname();
   const { items, selectedId } = useMaterials();
+  const picks = usePicks();
+  // While a 本堂課 card is dragged: which one, and the order it would drop into. Saved only on drop.
+  const [dragged, setDragged] = useState<string | null>(null);
+  const [dragOrder, setDragOrder] = useState<string[]>([]);
+  const [dragStart, setDragStart] = useState(picks);
+  // Another tab changed the picks mid-drag: drop the drag, since its order would bring back what they removed.
+  if (dragged !== null && picks !== dragStart) setDragged(null);
   const onMaterials = pathname === "/materials";
 
   // On a phone it starts closed, so the page gets the whole screen.
@@ -90,27 +34,21 @@ export default function Sidebar() {
     "aria-current": active ? ("page" as const) : undefined,
   });
 
+  // By which half of the card the pointer is on, so it settles however often this fires over one card.
+  const dragOver = (e: React.DragEvent<HTMLLIElement>, href: string) => {
+    if (dragged === null || href === dragged) return;
+    const { top, height } = e.currentTarget.getBoundingClientRect();
+    const order = dragOrder.filter((h) => h !== dragged);
+    order.splice(order.indexOf(href) + (e.clientY > top + height / 2 ? 1 : 0), 0, dragged);
+    if (order.join() !== dragOrder.join()) setDragOrder(order);
+  };
+
   // A paper card pinned to the cork board.
   const card = (label: React.ReactNode) => (
     <>
       <span className="pin" aria-hidden="true" />
       <span className="nav-card-text">{label}</span>
     </>
-  );
-
-  // Clickable tape-label that expands/collapses the section below it.
-  const sectionTitle = (label: string, sectionOpen: boolean, toggle: () => void) => (
-    <button
-      type="button"
-      className="sidebar-title tape-label sidebar-title-toggle"
-      onClick={toggle}
-      aria-expanded={sectionOpen}
-    >
-      {label}
-      <span className={`sidebar-title-arrow ${sectionOpen ? "is-open" : ""}`} aria-hidden="true">
-        ▾
-      </span>
-    </button>
   );
 
   return (
@@ -125,7 +63,13 @@ export default function Sidebar() {
       >
         <div className="sidebar-head">
           {open && (
-            <p className="sidebar-logo paper">
+            <Link
+              href="/"
+              className="sidebar-logo paper"
+              aria-label="教學便利通，回主頁"
+              title="回主頁"
+              onClick={() => isNarrow() && setOpen(false)}
+            >
               <svg className="sidebar-logo-icon" viewBox="0 0 32 26" aria-hidden="true">
                 <rect x="1" y="1" width="30" height="20" rx="2" className="logo-frame" />
                 <rect x="4" y="4" width="24" height="14" className="logo-board" />
@@ -133,7 +77,7 @@ export default function Sidebar() {
                 <rect x="6" y="21" width="20" height="3" rx="1" className="logo-frame" />
               </svg>
               教學便利通
-            </p>
+            </Link>
           )}
           <button
             className="sidebar-toggle"
@@ -147,18 +91,47 @@ export default function Sidebar() {
         {open && (
           // On a phone, picking a page closes the sidebar so the page shows.
           <nav onClick={(e) => (e.target as Element).closest("a") && isNarrow() && setOpen(false)}>
-            {sectionTitle("遊戲", gamesOpen, () => setGamesOpen((o) => !o))}
-            {gamesOpen && (
-              <ul>
-                {games.map((g) => (
-                  <li key={g.href}>
-                    <Link href={g.href} {...item(pathname === g.href)}>
-                      {card(g.name)}
+            <h2 className="sidebar-title tape-label">本堂課</h2>
+            <ul
+              // On the list, not the cards: a drop in the gap between two cards counts too.
+              onDragOver={(e) => dragged !== null && e.preventDefault()}
+              onDrop={(e) => {
+                if (dragged === null) return;
+                e.preventDefault();
+                savePicks(dragOrder);
+              }}
+            >
+              {(dragged === null ? picks : dragOrder)
+                .flatMap((href) => activities.filter((a) => a.href === href))
+                .map((a) => (
+                  <li
+                    key={a.href}
+                    draggable
+                    className={a.href === dragged ? "is-dragged" : undefined}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("application/x-class-pick", a.href);
+                      setDragged(a.href);
+                      setDragOrder(picks);
+                      setDragStart(picks);
+                    }}
+                    onDragOver={(e) => dragOver(e, a.href)}
+                    onDragEnd={() => setDragged(null)}
+                  >
+                    {/* Not draggable itself, so the drag moves the card instead of carrying the link's address. */}
+                    <Link href={a.href} draggable={false} {...item(pathname === a.href)}>
+                      {card(a.en ? `${a.en} ${a.zh}` : a.zh)}
                     </Link>
                   </li>
                 ))}
-              </ul>
-            )}
+              {picks.length === 0 && (
+                <li>
+                  <Link href="/" {...item(pathname === "/")}>
+                    {card("＋ 選遊戲和工具")}
+                  </Link>
+                </li>
+              )}
+            </ul>
 
             <h2 className="sidebar-title tape-label">教材</h2>
             <ul>
@@ -180,24 +153,6 @@ export default function Sidebar() {
                 </Link>
               </li>
             </ul>
-
-            {sectionTitle("工具", toolsOpen, () => setToolsOpen((o) => !o))}
-            {toolsOpen && (
-              <ul>
-                {tools.map((t) => (
-                  <li key={t.href}>
-                    <Link href={t.href} {...item(pathname === t.href)}>
-                      {card(t.name)}
-                    </Link>
-                  </li>
-                ))}
-                <li>
-                  <button type="button" className="nav-card nav-card-button" onClick={clearClassData}>
-                    {card("🧹 清除所有遊戲設定")}
-                  </button>
-                </li>
-              </ul>
-            )}
           </nav>
         )}
         {open && (
