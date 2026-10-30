@@ -55,10 +55,14 @@ export default function Home() {
   const [draft, setDraft] = useState<string[] | null>(null);
   const [full, setFull] = useState(false);
   const [seenPicks, setSeenPicks] = useState(picks);
-  // Dragged into a new order in the sidebar: unconfirmed ticks keep that order, so 確定 doesn't undo the drag.
+  // The sidebar's drag or another tab changed the picks: keep only what the teacher ticked or unticked here,
+  // so 確定 doesn't undo that change.
   if (picks !== seenPicks) {
     setSeenPicks(picks);
-    if (draft) setDraft([...picks.filter((h) => draft.includes(h)), ...draft.filter((h) => !picks.includes(h))]);
+    if (draft) {
+      const kept = picks.filter((h) => draft.includes(h) || !seenPicks.includes(h));
+      setDraft([...kept, ...draft.filter((h) => !seenPicks.includes(h) && !kept.includes(h))]);
+    }
   }
   const checked = draft ?? picks;
   const changed = draft !== null && draft.join() !== picks.join();

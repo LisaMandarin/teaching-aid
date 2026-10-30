@@ -19,6 +19,9 @@ export default function Sidebar() {
   // While a 本堂課 card is dragged: which one, and the order it would drop into. Saved only on drop.
   const [dragged, setDragged] = useState<string | null>(null);
   const [dragOrder, setDragOrder] = useState<string[]>([]);
+  const [dragStart, setDragStart] = useState(picks);
+  // Another tab changed the picks mid-drag: drop the drag, since its order would bring back what they removed.
+  if (dragged !== null && picks !== dragStart) setDragged(null);
   const onMaterials = pathname === "/materials";
 
   // On a phone it starts closed, so the page gets the whole screen.
@@ -31,11 +34,13 @@ export default function Sidebar() {
     "aria-current": active ? ("page" as const) : undefined,
   });
 
-  const dragOver = (href: string) => {
+  // By which half of the card the pointer is on, so it settles however often this fires over one card.
+  const dragOver = (e: React.DragEvent<HTMLLIElement>, href: string) => {
     if (dragged === null || href === dragged) return;
+    const { top, height } = e.currentTarget.getBoundingClientRect();
     const order = dragOrder.filter((h) => h !== dragged);
-    order.splice(dragOrder.indexOf(href), 0, dragged);
-    setDragOrder(order);
+    order.splice(order.indexOf(href) + (e.clientY > top + height / 2 ? 1 : 0), 0, dragged);
+    if (order.join() !== dragOrder.join()) setDragOrder(order);
   };
 
   // A paper card pinned to the cork board.
@@ -108,8 +113,9 @@ export default function Sidebar() {
                       e.dataTransfer.setData("application/x-class-pick", a.href);
                       setDragged(a.href);
                       setDragOrder(picks);
+                      setDragStart(picks);
                     }}
-                    onDragEnter={() => dragOver(a.href)}
+                    onDragOver={(e) => dragOver(e, a.href)}
                     onDragEnd={() => setDragged(null)}
                   >
                     {/* Not draggable itself, so the drag moves the card instead of carrying the link's address. */}

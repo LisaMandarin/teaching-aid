@@ -34,16 +34,27 @@ const NONE: string[] = [];
 let picks: string[] | null = null;
 const listeners = new Set<() => void>();
 
+// Another tab confirmed new picks, or cleared everything (key null). Without this, saving here would undo them.
+function onStorage(e: StorageEvent) {
+  if (e.key !== PICKS_KEY && e.key !== null) return;
+  picks = null;
+  listeners.forEach((l) => l());
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) window.removeEventListener("storage", onStorage);
+  };
 }
 
 function load() {
   if (picks === null) {
     const { value } = readSaved(PICKS_KEY);
     if (value !== null && !isStringArray(value)) keepBroken(PICKS_KEY);
-    picks = isStringArray(value) ? value.filter((href) => activities.some((a) => a.href === href)) : NONE;
+    picks = isStringArray(value) ? [...new Set(value)].filter((href) => activities.some((a) => a.href === href)) : NONE;
   }
   return picks;
 }

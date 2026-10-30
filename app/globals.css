@@ -3552,6 +3552,10 @@ label.btn {
   outline-offset: -3px;
 }
 
+.is-checked .home-card-pick:focus-visible {
+  outline-color: #fff;
+}
+
 /* Stays in reach however long the list is. */
 .home-actions {
   position: sticky;
