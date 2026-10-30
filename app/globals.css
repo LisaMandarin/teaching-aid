@@ -111,7 +111,6 @@ body {
   font-size: 22px;
   font-weight: 700;
   color: var(--heading);
-  text-decoration: none;
   white-space: nowrap;
   transform: rotate(-1deg);
 }
@@ -167,6 +166,14 @@ body {
   margin: 8px 0 0;
 }
 
+.sidebar-title-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+}
+
 .sidebar-title-arrow {
   display: inline-block;
   font-size: 12px;
@@ -216,10 +223,6 @@ body {
 
 .nav-card {
   transition: transform 0.15s;
-}
-
-.sidebar li.is-dragged {
-  opacity: 0.4;
 }
 
 .sidebar li .nav-card:hover:not([aria-current="page"]) {
@@ -3396,199 +3399,12 @@ label.btn {
   }
 }
 
-/* ---------- 主頁 ---------- */
-.home-hint {
-  margin: 6px 0 0;
-  color: var(--muted);
-}
-
-.home-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.home-section h2 {
-  margin: 0;
-}
-
-/* Columns follow the page's width, which the sidebar changes. */
-.home-section {
-  container-type: inline-size;
-}
-
-.home-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  /* A long English name can wrap; every row grows with it, so the cards stay the same height. */
-  grid-auto-rows: 1fr;
-  gap: 12px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-@container (max-width: 860px) {
-  .home-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@container (max-width: 640px) {
-  .home-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@container (max-width: 420px) {
-  .home-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.home-card {
-  display: flex;
-  min-height: 84px;
-  background: #fbf8f1;
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: 0 1px 0 rgba(60, 45, 20, 0.08), 0 2px 6px rgba(60, 45, 20, 0.06);
-  outline: 1.5px solid transparent;
-  outline-offset: -1.5px;
-}
-
-.home-card.is-checked {
-  outline-color: #26412f;
-}
-
-.home-card-pick {
-  flex: none;
-  width: 52px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0;
+.nav-card-button {
+  width: 100%;
   border: 0;
-  background: #efe6d6;
-  color: #fff;
   font: inherit;
+  text-align: left;
   cursor: pointer;
-  transition: background 0.15s;
-}
-
-.home-card-pick:hover {
-  filter: brightness(0.96);
-}
-
-.is-checked .home-card-pick {
-  background: #26412f;
-}
-
-.home-card-box {
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid #b9af9b;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.is-checked .home-card-box {
-  border-color: #fff;
-}
-
-.home-card-order {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.home-card-name {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 12px 16px;
-  cursor: pointer;
-}
-
-.home-card-zh {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: #2b2a24;
-}
-
-.home-card-en {
-  font-size: 13px;
-  color: #8a8170;
-}
-
-.home-card-open {
-  flex: none;
-  width: 48px;
-  display: grid;
-  place-items: center;
-  border-left: 1px solid #ebe2d0;
-  color: #7a715f;
-  font-size: 20px;
-  text-decoration: none;
-}
-
-.home-card-open:hover {
-  background: #efe6d6;
-  color: #2b2a24;
-}
-
-/* The card clips its children, so the focus ring goes inside. */
-.home-card-pick:focus-visible,
-.home-card-open:focus-visible {
-  outline: 2px solid #2b2a24;
-  outline-offset: -3px;
-}
-
-.is-checked .home-card-pick:focus-visible {
-  outline-color: #fff;
-}
-
-/* Stays in reach however long the list is. */
-.home-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
-}
-
-.home-actions p {
-  margin: 0;
-}
-
-.home-confirm:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.home-clear {
-  align-self: flex-start;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  cursor: pointer;
-}
-
-.home-clear:hover {
-  color: var(--ink);
-  text-decoration: underline;
 }
 
 /* ---------- 立可拍 ---------- */
