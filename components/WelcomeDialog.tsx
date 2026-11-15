@@ -36,13 +36,20 @@ export default function WelcomeDialog() {
         本網站為<strong>試用版</strong>，將於 <strong>2026 年 12 月 31 日</strong>關閉。
       </p>
       <p>
-        請先加入我們的 LINE 官方帳號，試用幾次後再填寫使用心得，即可獲得<strong>正式網站</strong>與<strong>開通碼</strong>。
+        請先加入我們的 LINE 官方帳號，試用幾次後到<strong>正式網站</strong>填寫<strong>使用心得問卷</strong>，即可獲得<strong>開通碼</strong>。
       </p>
 
       <div className="welcome-line">
         <img src={LINE_QR} alt="LINE 官方帳號 QR code" width={120} height={120} />
         <a className="btn-line" href={LINE_URL} target="_blank" rel="noopener noreferrer">
           加入 LINE 官方帳號
+        </a>
+      </div>
+
+      <div className="welcome-site">
+        <span className="welcome-site-label">正式網站</span>
+        <a className="btn-board" href="https://teacheasy.org" target="_blank" rel="noopener noreferrer">
+          teacheasy.org ↗
         </a>
       </div>
 
