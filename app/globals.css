@@ -2441,6 +2441,31 @@ label.btn {
   height: 108px;
 }
 
+/* Two ruled lines tall, highlighted like a marker so the official site stands out. */
+.welcome-site {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 72px;
+  margin-left: -12px;
+  padding: 0 12px;
+  background: var(--marker-yellow);
+  border-radius: 4px;
+}
+
+.welcome-site-label {
+  font-family: var(--font-chalk);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.welcome-site .btn-board {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 .welcome-footer {
   display: flex;
   align-items: center;
